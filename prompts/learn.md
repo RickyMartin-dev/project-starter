@@ -1,5 +1,7 @@
 # Learn prompt
 
+Read `AGENTS.md` before recording durable project knowledge.
+
 After a meaningful change, identify only knowledge that will remain useful after the task leaves memory.
 
 - Record a chosen alternative and its consequences in `docs/decisions/`.

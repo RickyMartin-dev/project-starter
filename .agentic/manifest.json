@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "templateVersion": "2026.09",
+  "sourceOfTruth": "AGENTS.md",
+  "docsRoot": "docs/",
+  "doctorCommand": "./scripts/project doctor",
+  "releaseCheckCommand": "./scripts/project release-check",
+  "learningProposalDirectory": "docs/state/proposals/",
+  "promotionPrompt": "prompts/promote.md",
+  "workflowIds": [
+    "plan",
+    "verify",
+    "review",
+    "learn",
+    "research",
+    "promote"
+  ],
+  "hardeningChecks": [
+    "scripts/check-secrets.sh",
+    "scripts/check-workflows.sh",
+    "scripts/check-instruction-surfaces.sh",
+    "scripts/check-manifest.sh",
+    "scripts/check-hardening-fixtures.sh",
+    "scripts/check-learning.sh"
+  ],
+  "adapterSurfaces": [
+    "CLAUDE.md",
+    ".claude/rules/",
+    ".claude/commands/",
+    ".cursor/rules/",
+    ".cursor/commands/"
+  ],
+  "durableState": "docs/state/",
+  "mutableProjectFiles": [
+    "AGENTS.md",
+    "docs/project-brief.md",
+    "docs/project-commands.md",
+    "docs/architecture.md"
+  ],
+  "upgradePolicy": "Review docs/research/2026-09-hardening-research.md and update the manifest when the shared contract changes."
+}

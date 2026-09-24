@@ -11,7 +11,8 @@ The starter keeps the shared contract small, puts durable project knowledge in p
 - A durable documentation system for architecture, plans, decisions, quality, security, and lessons.
 - Reusable prompts and task templates for plan → implement → verify → review → learn loops.
 - A dependency-free `scripts/project` command for orientation, plan creation, and starter checks.
-- A conservative security posture: no secrets, no auto-approve hooks, no required external service, and no hidden orchestration runtime.
+- Local hardening checks for secrets, workflow supply chain, instruction drift, prompt injection, manifest integrity, and learning proposals.
+- A project-local memory and upgrade loop that lets a reviewer agent promote evidence-backed improvements without global memory or hidden orchestration.
 
 ## Quick start
 
@@ -25,6 +26,9 @@ $EDITOR AGENTS.md
 
 # Confirm the starter is internally consistent.
 ./scripts/project check
+
+# Run the full local pre-push gate.
+./scripts/project release-check
 
 # Start the first piece of real work.
 ./scripts/project plan first-feature "First feature"
@@ -40,7 +44,8 @@ For an existing clean repository, copy or merge this starter into the repository
 4. Verify: run the repository's checks plus `./scripts/project check`.
 5. Review: inspect the diff for correctness, security, regressions, and unnecessary complexity.
 6. Learn: record durable decisions and lessons so the next agent starts smarter.
-7. Complete: move the plan to `docs/plans/completed/` and update the changelog when the project uses one.
+7. Promote: have the designated reviewer agent validate a learning proposal before changing shared policy.
+8. Complete: move the plan to `docs/plans/completed/` and update the changelog when the project uses one.
 
 The detailed contract is in [`docs/agent-workflow.md`](docs/agent-workflow.md). The template is designed for a human to remain the decision-maker while agents handle bounded, reviewable execution.
 
@@ -54,6 +59,10 @@ The detailed contract is in [`docs/agent-workflow.md`](docs/agent-workflow.md). 
 | Other agents | `README.md`, `docs/`, and `prompts/` | Use the same plan and verification contract. |
 
 Keep the shared source of truth in `AGENTS.md` and `docs/`. Native adapter files should point to that source, not fork it into competing rulebooks.
+
+## Project-local learning
+
+Each project keeps its own durable state under `docs/state/`. Agents may propose lessons, experiments, risks, and upgrade ideas under `docs/state/proposals/`. The designated reviewer agent uses `prompts/promote.md` to check evidence, scope, rollback, secrets, and trust boundaries before applying a promotion. This is repository-local learning, not automatic model retraining or a shared external memory service.
 
 ## First customization pass
 
@@ -71,6 +80,7 @@ Keep the shared source of truth in `AGENTS.md` and `docs/`. Native adapter files
 - Parallel work requires isolation and explicit ownership.
 - Generated knowledge must be labeled and reviewed before it becomes durable.
 - Tool-specific conveniences are adapters; the repository contract stays portable.
+- Durable memory is project-specific, evidence-backed, and explicitly promoted.
 
 ## Research behind the structure
 

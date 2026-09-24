@@ -2,6 +2,26 @@
 
 Replace this file with the project's actual system map. Keep it focused on boundaries and flows that affect implementation decisions.
 
+## Starter control plane
+
+```text
+[AGENTS.md]
+      |
+      +--> [Claude/Cursor adapters]
+      +--> [docs/ prompts/]
+      +--> [docs/state/ proposals/]
+      |          |
+      |          v
+      |   [designated reviewer agent]
+      |          |
+      |          v
+      +--> [reviewed durable knowledge]
+      |
+      +--> [local release checks] --> [CI]
+```
+
+The starter has no application runtime or hidden orchestration service. The repository is the system of record; proposals are untrusted until the reviewer protocol promotes them.
+
 ## System map
 
 ```text

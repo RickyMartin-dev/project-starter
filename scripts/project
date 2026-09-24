@@ -7,25 +7,58 @@ usage() {
   cat <<'EOF'
 Usage:
   ./scripts/project check
-  ./scripts/project doctor
+  ./scripts/project check --json
+  ./scripts/project doctor [--json]
+  ./scripts/project release-check
   ./scripts/project context
   ./scripts/project plan <slug> [title]
   ./scripts/project experiment <slug> [title]
 
 Commands:
   check    Validate the portable starter contract.
+  doctor   Validate the starter, with optional machine-readable output.
+  release-check  Run all checks required before a release or push.
   context  Print the recommended orientation order.
   plan     Create a plan under docs/plans/active/ from the shared template.
 EOF
 }
 
+doctor_json() {
+  local status=pass
+  local placeholder_warnings=false
+  if ! "$ROOT_DIR/scripts/check-starter.sh" >/dev/null; then
+    status=fail
+  fi
+  if grep -q 'replace-me' "$ROOT_DIR/docs/project-brief.md" "$ROOT_DIR/docs/project-commands.md"; then
+    placeholder_warnings=true
+  fi
+  printf '{"schemaVersion":1,"status":"%s","command":"./scripts/project doctor","checks":["starter-contract","local-hardening","shell-syntax"],"detectedAdapters":["codex","claude","cursor"],"placeholderWarnings":%s,"remediation":"Replace project placeholders before relying on application-specific quality gates."}\n' "$status" "$placeholder_warnings"
+  [[ "$status" == pass ]]
+}
+
 case "${1:-}" in
   check)
+    if [[ "${2:-}" == "--json" ]]; then
+      if "$ROOT_DIR/scripts/check-starter.sh" >/dev/null; then
+        printf '{"status":"pass","command":"./scripts/project check"}\n'
+        exit 0
+      else
+        printf '{"status":"fail","command":"./scripts/project check"}\n'
+        exit 1
+      fi
+    fi
     exec "$ROOT_DIR/scripts/check-starter.sh"
     ;;
   doctor)
+    if [[ "${2:-}" == "--json" ]]; then
+      doctor_json
+      exit $?
+    fi
     printf 'Checking project starter configuration...\n'
     exec "$ROOT_DIR/scripts/check-starter.sh"
+    ;;
+  release-check)
+    exec "$ROOT_DIR/scripts/check-release.sh"
     ;;
   context)
     cat <<'EOF'

@@ -4,7 +4,7 @@ This is the repeatable operating system for work in this repository. Adapt the c
 
 ## 1. Orient
 
-Read `AGENTS.md`, `docs/project-brief.md`, `docs/project-commands.md`, `docs/architecture.md`, and the relevant plan or decision. Search before assuming. Identify the smallest set of files that can solve the request.
+Read `AGENTS.md` and the task-relevant parts of `docs/project-brief.md`. Read `docs/project-commands.md` before running checks, `docs/architecture.md` when changing boundaries or data flow, and the relevant plan or decision when one exists. Search before assuming. Identify the smallest set of files that can solve the request.
 
 ## 2. Plan
 
@@ -48,7 +48,11 @@ Use a scout report for bounded research and a ship plan for authorized changes. 
 
 For improvements to code, prompts, or process, use the experiment loop in `docs/experiments/`: baseline → hypothesis → bounded run → measure → keep or discard/revert. Keep the evaluator stable, record the result, and promote only evidence-backed lessons. Append durable verification evidence to `docs/verification-log.md`.
 
-## 7. Complete
+## 7. Promote learning
+
+Use `docs/state/proposals/` for project-specific improvement proposals. The designated reviewer agent may approve a proposal only after checking its evidence, scope, rollback, secret safety, and prompt-injection boundary. Apply the smallest durable change and record the evidence in `docs/verification-log.md`.
+
+## 8. Complete
 
 Confirm acceptance criteria, move the plan to `docs/plans/completed/`, update the changelog when appropriate, and report verification evidence plus known limitations.
 
