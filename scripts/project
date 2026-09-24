@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  ./scripts/project check
+  ./scripts/project doctor
+  ./scripts/project context
+  ./scripts/project plan <slug> [title]
+  ./scripts/project experiment <slug> [title]
+
+Commands:
+  check    Validate the portable starter contract.
+  context  Print the recommended orientation order.
+  plan     Create a plan under docs/plans/active/ from the shared template.
+EOF
+}
+
+case "${1:-}" in
+  check)
+    exec "$ROOT_DIR/scripts/check-starter.sh"
+    ;;
+  doctor)
+    printf 'Checking project starter configuration...\n'
+    exec "$ROOT_DIR/scripts/check-starter.sh"
+    ;;
+  context)
+    cat <<'EOF'
+Read in this order:
+  1. AGENTS.md
+  2. docs/project-brief.md
+  3. docs/project-commands.md
+  4. docs/architecture.md
+  5. docs/plans/active/<relevant-plan>.md
+  6. nearest nested AGENTS.md, if any
+EOF
+    ;;
+  plan)
+    slug="${2:-}"
+    title="${3:-$slug}"
+    if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+      printf 'plan slug must use lowercase letters, numbers, and hyphens.\n' >&2
+      exit 2
+    fi
+    target="$ROOT_DIR/docs/plans/active/$slug.md"
+    if [[ -e "$target" ]]; then
+      printf 'plan already exists: %s\n' "$target" >&2
+      exit 1
+    fi
+    today="$(date +%F)"
+    while IFS= read -r line; do
+      case "$line" in
+        '# Plan: <title>')
+          printf '# Plan: %s\n' "$title"
+          ;;
+        *'<YYYY-MM-DD>'*)
+          line="${line//<YYYY-MM-DD>/$today}"
+          printf '%s\n' "$line"
+          ;;
+        *)
+          printf '%s\n' "$line"
+          ;;
+      esac
+    done < "$ROOT_DIR/docs/templates/plan.md" > "$target"
+    printf 'created %s\n' "$target"
+    ;;
+  experiment)
+    slug="${2:-}"
+    title="${3:-$slug}"
+    if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+      printf 'experiment slug must use lowercase letters, numbers, and hyphens.\n' >&2
+      exit 2
+    fi
+    target="$ROOT_DIR/docs/experiments/runs/$slug.md"
+    if [[ -e "$target" ]]; then
+      printf 'experiment already exists: %s\n' "$target" >&2
+      exit 1
+    fi
+    today="$(date +%F)"
+    while IFS= read -r line; do
+      case "$line" in
+        '# Experiment: <title>')
+          printf '# Experiment: %s\n' "$title"
+          ;;
+        *'<YYYY-MM-DD>'*)
+          line="${line//<YYYY-MM-DD>/$today}"
+          printf '%s\n' "$line"
+          ;;
+        *'<slug>'*)
+          line="${line//<slug>/$slug}"
+          printf '%s\n' "$line"
+          ;;
+        *)
+          printf '%s\n' "$line"
+          ;;
+      esac
+    done < "$ROOT_DIR/docs/templates/experiment.md" > "$target"
+    printf 'created %s\n' "$target"
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

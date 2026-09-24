@@ -1,0 +1,24 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Operating-system and editor noise
+.DS_Store
+.idea/
+.vscode/*.local.json
+
+# Agent-local state and transcripts
+.agent-state/
+.codex/
+.claude/settings.local.json
+.cursor/*.local.json
+.cursor/mcp.json
+
+# Common build output; keep project-specific entries below.
+dist/
+build/
+coverage/
+*.log
