@@ -13,6 +13,9 @@ The starter keeps the shared contract small, puts durable project knowledge in p
 - A dependency-free `scripts/project` command for orientation, plan creation, and starter checks.
 - Local hardening checks for secrets, workflow supply chain, instruction drift, prompt injection, manifest integrity, and learning proposals.
 - A project-local memory and upgrade loop that lets a reviewer agent promote evidence-backed improvements without global memory or hidden orchestration.
+- Compaction snapshots and a second-brain index so full project context survives long sessions and model switches.
+- Fresh research comparisons, deterministic upgrade suggestions, and bounded specialist role cards for UI, UX, Python, trading, and any project-specific domain.
+- A committed Lavish presentation that makes the operating system easy to review visually.
 
 ## Quick start
 
@@ -30,6 +33,14 @@ $EDITOR AGENTS.md
 # Run the full local pre-push gate.
 ./scripts/project release-check
 
+# Capture durable context before a long session or compaction.
+./scripts/project compact first-handoff "First project handoff"
+
+# Research, propose, and route improvements without hidden authority.
+./scripts/project research first-comparison "What should this project borrow from current practice?"
+./scripts/project suggest-upgrades
+./scripts/project specialist domain-role "Project domain specialist"
+
 # Start the first piece of real work.
 ./scripts/project plan first-feature "First feature"
 ```
@@ -45,9 +56,16 @@ For an existing clean repository, copy or merge this starter into the repository
 5. Review: inspect the diff for correctness, security, regressions, and unnecessary complexity.
 6. Learn: record durable decisions and lessons so the next agent starts smarter.
 7. Promote: have the designated reviewer agent validate a learning proposal before changing shared policy.
-8. Complete: move the plan to `docs/plans/completed/` and update the changelog when the project uses one.
+8. Compact: snapshot facts, decisions, evidence, risks, and next actions before context compaction or handoff.
+9. Research: compare fresh external practice and record what to adopt, defer, or reject.
+10. Upgrade: create a bounded proposal, verify it, and promote only the smallest safe improvement.
+11. Complete: move the plan to `docs/plans/completed/` and update the changelog when the project uses one.
 
 The detailed contract is in [`docs/agent-workflow.md`](docs/agent-workflow.md). The template is designed for a human to remain the decision-maker while agents handle bounded, reviewable execution.
+
+The long-lived operating system is described in [`docs/operating-system.md`](docs/operating-system.md). The second-brain index is [`docs/second-brain/README.md`](docs/second-brain/README.md), and compaction snapshots live in `docs/compactions/`.
+
+Use [`docs/learning-path.md`](docs/learning-path.md) to grow autonomy in stages: baseline → continuity → evidence → research → specialists → governed learning → measured autonomy.
 
 ## Using different agents in one repository
 
@@ -63,6 +81,14 @@ Keep the shared source of truth in `AGENTS.md` and `docs/`. Native adapter files
 ## Project-local learning
 
 Each project keeps its own durable state under `docs/state/`. Agents may propose lessons, experiments, risks, and upgrade ideas under `docs/state/proposals/`. The designated reviewer agent uses `prompts/promote.md` to check evidence, scope, rollback, secrets, and trust boundaries before applying a promotion. This is repository-local learning, not automatic model retraining or a shared external memory service.
+
+## Research, upgrades, and specialist agents
+
+Use [`docs/research/README.md`](docs/research/README.md) to create dated comparisons and [`docs/upgrades/README.md`](docs/upgrades/README.md) to turn evidence into a bounded backlog. `./scripts/project suggest-upgrades --json` provides repeatable signals; it never edits policy by itself.
+
+Specialists are portable Markdown role cards under [`agents/`](agents/). The factory prompt can draft a UI, UX, Python, trading, or domain-specific role, but a reviewer must approve scope and evidence before delegation. This keeps “agents that create agents” safe and portable across runtimes rather than hiding a provider-specific supervisor in the starter.
+
+For a visual walkthrough, open [`docs/presentations/README.md`](docs/presentations/README.md) and launch the committed Lavish artifact.
 
 ## First customization pass
 

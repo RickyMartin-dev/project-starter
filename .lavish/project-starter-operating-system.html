@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-theme="luxury">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Starter Operating System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :where(.grid, .flex) > * { min-width: 0; }
+    :where(p, h1, h2, h3, li, td, th, .badge) { overflow-wrap: anywhere; }
+    body { background: #11100e; color: #f4efe5; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 34px 22px 72px; }
+    .eyebrow { letter-spacing: .17em; text-transform: uppercase; color: #d4a84b; font-size: .72rem; font-weight: 800; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr); gap: 28px; align-items: center; padding: 42px 0 34px; }
+    .hero h1 { font-size: clamp(2.4rem, 7vw, 5.6rem); line-height: .94; margin: 14px 0 20px; letter-spacing: -.055em; }
+    .hero p { color: #c7c0b2; max-width: 62ch; font-size: 1.08rem; }
+    .cardish { background: linear-gradient(145deg, #29251c, #191713); border: 1px solid #51432a; border-radius: 22px; padding: 22px; box-shadow: 0 18px 55px #0006; }
+    .map { width: 100%; height: auto; border-radius: 18px; background: #17150f; border: 1px solid #67532d; }
+    .section { margin-top: 54px; }
+    .section h2 { font-size: clamp(1.7rem, 3vw, 2.7rem); margin: 8px 0 10px; letter-spacing: -.035em; }
+    .muted { color: #bcb3a2; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .cardish h3 { margin: 0 0 8px; color: #f0c768; }
+    .cardish p { margin: 0; color: #c7c0b2; }
+    .step { display: flex; gap: 12px; align-items: flex-start; }
+    .num { display: grid; place-items: center; flex: 0 0 31px; height: 31px; border-radius: 50%; background: #d4a84b; color: #15120d; font-weight: 900; }
+    table { width: 100%; border-collapse: collapse; color: #ded6c7; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #4a3e2a; vertical-align: top; }
+    th { color: #f0c768; font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; }
+    .footer { margin-top: 55px; color: #9f9686; font-size: .9rem; }
+    @media (max-width: 800px) { .hero, .grid2, .grid3 { grid-template-columns: 1fr; } .hero { padding-top: 18px; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Project Starter / Operating System</div>
+        <h1>A second brain that ships.</h1>
+        <p>One repository-local contract for Codex, Claude Code, Cursor, and future agents: recoverable context, evidence-led learning, fresh research, safe specialist routing, and security checks that travel with the project.</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:22px"><span class="badge badge-warning">portable</span><span class="badge badge-success">reviewable</span><span class="badge badge-info">domain-agnostic</span></div>
+      </div>
+      <div class="cardish">
+        <svg class="map" viewBox="0 0 520 360" role="img" aria-labelledby="map-title map-desc">
+          <title id="map-title">Project learning loop</title><desc id="map-desc">A circular flow between work, verification, memory, research, upgrades, and specialist roles.</desc>
+          <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#d4a84b"/></marker></defs>
+          <path d="M150 92 C260 20 375 63 398 145" fill="none" stroke="#d4a84b" stroke-width="3" marker-end="url(#arrow)"/>
+          <path d="M405 182 C425 275 340 323 250 305" fill="none" stroke="#d4a84b" stroke-width="3" marker-end="url(#arrow)"/>
+          <path d="M212 304 C110 318 58 246 82 162" fill="none" stroke="#d4a84b" stroke-width="3" marker-end="url(#arrow)"/>
+          <g fill="#29251c" stroke="#806531" stroke-width="2">
+            <rect x="30" y="112" width="126" height="62" rx="14"/><rect x="173" y="42" width="144" height="62" rx="14"/><rect x="350" y="126" width="140" height="62" rx="14"/><rect x="286" y="244" width="142" height="62" rx="14"/><rect x="79" y="238" width="148" height="62" rx="14"/>
+          </g>
+          <g fill="#f4efe5" text-anchor="middle" font-size="14" font-weight="700"><text x="93" y="140">Work</text><text x="93" y="160">plan · build</text><text x="245" y="70">Verify</text><text x="245" y="90">evidence</text><text x="420" y="154">Research</text><text x="420" y="174">compare</text><text x="357" y="272">Upgrade</text><text x="357" y="292">promote</text><text x="153" y="266">Memory</text><text x="153" y="286">compact</text></g>
+          <circle cx="258" cy="183" r="45" fill="#d4a84b"/><text x="258" y="179" fill="#15120d" text-anchor="middle" font-size="15" font-weight="900">SPECIALISTS</text><text x="258" y="198" fill="#15120d" text-anchor="middle" font-size="12">bounded roles</text>
+        </svg>
+      </div>
+    </section>
+
+    <section class="section"><div class="eyebrow">01 / Continuity</div><h2>Compaction becomes a checkpoint.</h2><p class="muted">`./scripts/project compact <em>slug</em>` captures branch, commit, inventory, project facts, active work, risks, research, and verification paths. The agent adds rationale and next actions. Nothing important lives only in chat.</p><div class="grid3" style="margin-top:18px"><div class="cardish"><h3>Facts</h3><p>Git state, file map, commands, architecture, and current task.</p></div><div class="cardish"><h3>Meaning</h3><p>Decisions, trade-offs, uncertainty, and failed approaches.</p></div><div class="cardish"><h3>Resume</h3><p>One safe next action with evidence another agent can reproduce.</p></div></div></section>
+
+    <section class="section"><div class="eyebrow">02 / Improvement</div><h2>Research turns into a roadmap.</h2><div class="grid2" style="margin-top:18px"><div class="cardish"><h3>Fresh comparison</h3><p>Research reports record sources, dates, limitations, adoption decisions, and recheck triggers. External ideas are input, never repository authority.</p></div><div class="cardish"><h3>Upgrade suggestions</h3><p>Deterministic signals surface placeholders, stale compactions, missing research, and unreviewed proposals. Suggestions require evidence before promotion.</p></div></div></section>
+
+    <section class="section"><div class="eyebrow">03 / Delegation</div><h2>Specialists are role cards before runtimes.</h2><div class="cardish"><div class="step"><div class="num">1</div><div><h3>Define</h3><p>Mission, inputs, outputs, authority, credentials, evidence, and rollback.</p></div></div><div class="step" style="margin-top:16px"><div class="num">2</div><div><h3>Review</h3><p>Owner or designated reviewer approves the bounded role brief.</p></div></div><div class="step" style="margin-top:16px"><div class="num">3</div><div><h3>Delegate</h3><p>Codex, Claude, Cursor, or another harness may execute the role inside the project's declared boundaries.</p></div></div></div></section>
+
+    <section class="section"><div class="eyebrow">04 / Why these choices</div><h2>Borrow the strongest patterns, leave the lock-in behind.</h2><div class="cardish" style="overflow-x:auto"><table><thead><tr><th>Pattern</th><th>Useful idea</th><th>Starter response</th></tr></thead><tbody><tr><td>Agent fleets</td><td>Visible roles and isolated work</td><td>Plain role cards and explicit handoffs</td></tr><tr><td>Autonomous experiments</td><td>Fixed budget, metric, keep/discard</td><td>Evidence-oriented proposals and experiment logs</td></tr><tr><td>Memory banks</td><td>Small startup path, lazy detail</td><td>AGENTS map plus second-brain index</td></tr><tr><td>Self-evolution</td><td>Trust gates, maker-checker, audit</td><td>Reviewer-approved promotion, no hidden authority</td></tr></tbody></table></div></section>
+
+    <section class="section"><div class="eyebrow">05 / Start here</div><h2>Make the next project learnable on day one.</h2><div class="grid3" style="margin-top:18px"><div class="cardish"><h3>Orient</h3><p>Fill `docs/project-brief.md`, commands, and architecture.</p></div><div class="cardish"><h3>Operate</h3><p>Plan, build, verify, review, compact, and hand off.</p></div><div class="cardish"><h3>Improve</h3><p>Research, propose, review, promote, and recheck.</p></div></div><p class="footer">Authoritative details live in `AGENTS.md`, `docs/operating-system.md`, `.agentic/manifest.json`, and the verification log. This presentation is a communication layer.</p></section>
+  </main>
+</body>
+</html>

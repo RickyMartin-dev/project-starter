@@ -2,11 +2,11 @@
 
 ## Status
 
-Completed the repository-local hardening review for the starter upgrade.
+Completed the project operating-system upgrade: compaction-safe memory, research comparison, upgrade suggestions, specialist role cards, and visual presentation.
 
 - Owner: project-starter maintainer
 - Plan: `docs/plans/completed/hardening-review.md`
-- Acceptance: targeted negative fixtures fail for the intended reason; starter and release checks pass; no authority or network expansion is introduced. Met.
+- Acceptance: generated artifacts work, three Luna research reports are recorded, local hardening passes, no authority or network expansion is introduced, and the final commit is pushed. Met after final verification.
 
 ## Update protocol
 

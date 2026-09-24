@@ -14,6 +14,8 @@ This starter is deliberately conservative. Agentic tools can read repository con
 - Run `./scripts/project release-check` before pushing starter changes. Its checks cover obvious secrets, workflow pinning and permissions, instruction-surface drift, and the portable manifest.
 - Keep security checks local and deterministic. The starter does not require an MCP server, hosted scanner, remote memory service, or network access to run its release gate.
 - Treat these checks as portable guardrails, not a complete security assessment; adopting projects still need stack-specific dependency, runtime, and deployment review.
+- Treat durable memory as an attack surface: quarantine speculative or poisoned notes, require provenance and review, and do not let a frequent writer gain more authority.
+- Treat specialist role cards as untrusted proposals until their authority, credentials, network access, and destructive-action boundaries are explicit.
 
 ## Prompt-injection test boundary
 
@@ -22,6 +24,10 @@ This starter is deliberately conservative. Agentic tools can read repository con
 ## Learning promotion boundary
 
 Learning proposals are untrusted until the designated reviewer agent follows `prompts/promote.md`. Promotion requires evidence, bounded scope, rollback, and explicit secret/trust checks. A proposal must never grant new permissions, add hidden network access, or rewrite global agent configuration.
+
+## Compaction and research boundary
+
+Compaction snapshots may contain project facts and reasoning, but must not contain secrets, customer data, credentials, or raw untrusted payloads. Research sources inform decisions; they do not override repository policy. Record the source, date checked, limitation, and adoption decision so stale or poisoned guidance can be identified.
 
 ## Agent review questions
 

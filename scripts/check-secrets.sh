@@ -32,11 +32,30 @@ credential_patterns=(
 scan_files=()
 if [[ -d .git ]]; then
   while IFS= read -r -d '' file; do
-    [[ "$file" == "scripts/check-secrets.sh" ]] || scan_files+=("$file")
-  done < <(git ls-files --cached --others --exclude-standard -z)
+    case "$file" in
+      scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
+        continue
+        ;;
+      *)
+        scan_files+=("$file")
+        ;;
+    esac
+  done < <(
+    git ls-files --cached -z
+    git ls-files --others --exclude-standard -z
+    git ls-files --others --ignored --exclude-standard -z
+  )
 else
   while IFS= read -r -d '' file; do
-    [[ "$file" == "./scripts/check-secrets.sh" ]] || scan_files+=("${file#./}")
+    relative_file="${file#./}"
+    case "$relative_file" in
+      scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
+        continue
+        ;;
+      *)
+        scan_files+=("$relative_file")
+        ;;
+    esac
   done < <(find . -type f ! -path './.git/*' -print0)
 fi
 

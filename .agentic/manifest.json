@@ -7,13 +7,28 @@
   "releaseCheckCommand": "./scripts/project release-check",
   "learningProposalDirectory": "docs/state/proposals/",
   "promotionPrompt": "prompts/promote.md",
+  "compactionCommand": "./scripts/project compact <slug>",
+  "compactionDirectory": "docs/compactions/",
+  "researchCommand": "./scripts/project research <slug> <question>",
+  "researchDirectory": "docs/research/",
+  "upgradeCommand": "./scripts/project upgrade <slug> <title>",
+  "upgradeSuggestionCommand": "./scripts/project suggest-upgrades",
+  "upgradeDirectory": "docs/upgrades/",
+  "specialistCommand": "./scripts/project specialist <slug> <title>",
+  "specialistDirectory": "agents/specialists/",
+  "specialistFactoryPrompt": "prompts/factory.md",
+  "presentationArtifact": ".lavish/project-starter-operating-system.html",
   "workflowIds": [
     "plan",
     "verify",
     "review",
     "learn",
     "research",
-    "promote"
+    "promote",
+    "compact",
+    "upgrade",
+    "specialist",
+    "present"
   ],
   "hardeningChecks": [
     "scripts/check-secrets.sh",
@@ -21,21 +36,33 @@
     "scripts/check-instruction-surfaces.sh",
     "scripts/check-manifest.sh",
     "scripts/check-hardening-fixtures.sh",
-    "scripts/check-learning.sh"
+    "scripts/check-learning.sh",
+    "scripts/check-memory.sh",
+    "scripts/check-research.sh",
+    "scripts/check-upgrades.sh",
+    "scripts/check-specialists.sh",
+    "scripts/check-presentation.sh"
   ],
   "adapterSurfaces": [
     "CLAUDE.md",
     ".claude/rules/",
     ".claude/commands/",
     ".cursor/rules/",
-    ".cursor/commands/"
+    ".cursor/commands/",
+    "agents/",
+    ".lavish/"
   ],
   "durableState": "docs/state/",
   "mutableProjectFiles": [
     "AGENTS.md",
     "docs/project-brief.md",
     "docs/project-commands.md",
-    "docs/architecture.md"
+    "docs/architecture.md",
+    "docs/operating-system.md",
+    "docs/compactions/",
+    "docs/research/",
+    "docs/upgrades/",
+    "agents/specialists/"
   ],
-  "upgradePolicy": "Review docs/research/2026-09-hardening-research.md and update the manifest when the shared contract changes."
+  "upgradePolicy": "Review docs/research/2026-09-project-operating-system-research.md and update the manifest when the shared contract changes."
 }

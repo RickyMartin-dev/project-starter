@@ -7,7 +7,7 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 
 failures=0
 copy_fixture() {
-  mkdir -p "$TEMP_DIR/.github/workflows" "$TEMP_DIR/.agentic/fixtures" "$TEMP_DIR/scripts" "$TEMP_DIR/.cursor/rules" "$TEMP_DIR/.cursor/commands" "$TEMP_DIR/.claude/rules" "$TEMP_DIR/.claude/commands" "$TEMP_DIR/prompts" "$TEMP_DIR/docs/state/proposals"
+  mkdir -p "$TEMP_DIR/.github/workflows" "$TEMP_DIR/.agentic/fixtures" "$TEMP_DIR/scripts" "$TEMP_DIR/.cursor/rules" "$TEMP_DIR/.cursor/commands" "$TEMP_DIR/.claude/rules" "$TEMP_DIR/.claude/commands" "$TEMP_DIR/prompts" "$TEMP_DIR/docs/state/proposals" "$TEMP_DIR/docs/compactions" "$TEMP_DIR/docs/research" "$TEMP_DIR/docs/upgrades" "$TEMP_DIR/agents/specialists" "$TEMP_DIR/.lavish"
   cp "$ROOT_DIR/scripts/check-secrets.sh" "$TEMP_DIR/scripts/"
   cp "$ROOT_DIR/scripts/check-workflows.sh" "$TEMP_DIR/scripts/"
   cp "$ROOT_DIR/scripts/check-instruction-surfaces.sh" "$TEMP_DIR/scripts/"
@@ -24,6 +24,18 @@ copy_fixture() {
   cp "$ROOT_DIR/docs/security.md" "$TEMP_DIR/docs/"
   cp "$ROOT_DIR/docs/state/README.md" "$TEMP_DIR/docs/state/"
   cp "$ROOT_DIR/docs/state/proposals/README.md" "$TEMP_DIR/docs/state/proposals/"
+  cp "$ROOT_DIR/docs/operating-system.md" "$TEMP_DIR/docs/"
+  cp "$ROOT_DIR/docs/compactions/README.md" "$TEMP_DIR/docs/compactions/"
+  cp "$ROOT_DIR/docs/research/README.md" "$TEMP_DIR/docs/research/"
+  cp "$ROOT_DIR/docs/upgrades/README.md" "$TEMP_DIR/docs/upgrades/"
+  cp "$ROOT_DIR/agents/README.md" "$TEMP_DIR/agents/"
+  cp "$ROOT_DIR/docs/presentations/README.md" "$TEMP_DIR/docs/"
+  cp "$ROOT_DIR/.lavish/project-starter-operating-system.html" "$TEMP_DIR/.lavish/"
+  : > "$TEMP_DIR/agents/specialists/.gitkeep"
+  git -C "$TEMP_DIR" init -q
+  git -C "$TEMP_DIR" config user.email fixture@example.invalid
+  git -C "$TEMP_DIR" config user.name fixture
+  git -C "$TEMP_DIR" add -A
 }
 
 expect_failure_with_message() {
@@ -61,6 +73,12 @@ key_kind='PRIVATE KEY'
 printf '%s\n' "-----BEGIN ${key_kind}-----" "fake" "-----END ${key_kind}-----" > "$TEMP_DIR/fake-private-key.txt"
 expect_failure_with_message "generic private-key pattern" "possible credential material" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
 rm -f "$TEMP_DIR/fake-private-key.txt"
+
+printf 'ignored-secret.txt\n' > "$TEMP_DIR/.gitignore"
+ignored_prefix='xoxb'
+printf '%s\n' "${ignored_prefix}-12345678901234567890" > "$TEMP_DIR/ignored-secret.txt"
+expect_failure_with_message "ignored credential pattern" "possible credential material" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+rm -f "$TEMP_DIR/ignored-secret.txt" "$TEMP_DIR/.gitignore"
 
 cat > "$TEMP_DIR/.github/workflows/unpinned.yml" <<'EOF'
 name: bad

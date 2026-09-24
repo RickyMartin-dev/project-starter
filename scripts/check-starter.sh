@@ -15,6 +15,32 @@ required_files=(
   "docs/agent-workflow.md"
   "docs/quality.md"
   "docs/security.md"
+  "docs/operating-system.md"
+  "docs/learning-path.md"
+  "docs/second-brain/README.md"
+  "docs/compactions/README.md"
+  "docs/compactions/.gitkeep"
+  "docs/templates/compaction.md"
+  "docs/templates/research.md"
+  "docs/templates/upgrade.md"
+  "docs/templates/specialist.md"
+  "docs/research/README.md"
+  "docs/research/backlog.md"
+  "docs/research/2026-09-project-operating-system-research.md"
+  "docs/research/2026-09-luna-operating-system-ecosystems.md"
+  "docs/research/2026-09-luna-operating-system-governance.md"
+  "docs/research/2026-09-luna-operating-system-operations.md"
+  "docs/upgrades/README.md"
+  "docs/upgrades/backlog.md"
+  "docs/upgrades/proposals/.gitkeep"
+  "docs/presentations/README.md"
+  "agents/README.md"
+  "agents/roles/ui.md"
+  "agents/roles/ux.md"
+  "agents/roles/python.md"
+  "agents/roles/trading.md"
+  "agents/specialists/.gitkeep"
+  ".lavish/project-starter-operating-system.html"
   "docs/verification-log.md"
   "docs/plans/completed/hardening-review.md"
   "docs/experiments/README.md"
@@ -49,6 +75,10 @@ required_files=(
   "prompts/learn.md"
   "prompts/research.md"
   "prompts/promote.md"
+  "prompts/factory.md"
+  "prompts/specialist.md"
+  "prompts/compact.md"
+  "prompts/upgrade.md"
   ".cursor/rules/00-shared-context.mdc"
   ".claude/rules/00-shared-context.md"
   ".cursor/commands/plan.md"
@@ -63,11 +93,18 @@ required_files=(
   ".claude/commands/research.md"
   ".cursor/commands/promote.md"
   ".claude/commands/promote.md"
+  ".cursor/commands/specialist.md"
+  ".claude/commands/specialist.md"
+  ".cursor/commands/compact.md"
+  ".claude/commands/compact.md"
+  ".cursor/commands/upgrade.md"
+  ".claude/commands/upgrade.md"
   ".agentic/manifest.json"
   ".agentic/fixtures/untrusted-repo-note.md"
   ".github/dependabot.yml"
   ".github/workflows/quality.yml"
   ".github/workflows/security.yml"
+  ".github/workflows/upgrade-review.yml"
   "scripts/project"
   "scripts/check-starter.sh"
   "scripts/check-secrets.sh"
@@ -76,6 +113,11 @@ required_files=(
   "scripts/check-manifest.sh"
   "scripts/check-hardening-fixtures.sh"
   "scripts/check-learning.sh"
+  "scripts/check-memory.sh"
+  "scripts/check-research.sh"
+  "scripts/check-upgrades.sh"
+  "scripts/check-specialists.sh"
+  "scripts/check-presentation.sh"
 )
 
 failures=0
@@ -107,7 +149,7 @@ if grep -RIl --exclude-dir=.git -E 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|AKIA[0-9A
   failures=$((failures + 1))
 fi
 
-for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh; do
+for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh; do
   if ! bash "$ROOT_DIR/scripts/$security_check"; then
     failures=$((failures + 1))
   fi

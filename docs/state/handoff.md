@@ -8,10 +8,11 @@
 
 ## Current handoff
 
-- Completed: tightened the hardening fixture's path and baseline validation; made failure assertions check targeted diagnostics; updated the release gate to inspect tracked changes relative to `HEAD`.
-- Evidence: `./scripts/project check`, `./scripts/project release-check`, `./scripts/project check --json`, `./scripts/project doctor --json`, `jq empty .agentic/manifest.json`, and tracked/untracked whitespace checks passed.
-- Open decision: none for this bounded review; the starter's placeholder project commands still require replacement by adopters.
-- Next safe action: customize the starter's project brief and project-specific commands before adopting it in a new repository.
+- Completed: added compaction snapshots, second-brain navigation, research/comparison records, upgrade suggestions, specialist role generation, three Luna research reports, local checks, scheduled review workflow, and a Lavish overview.
+- Latest compaction: `docs/compactions/2026-09-24-0017-operating-system-upgrade.md`.
+- Evidence: `./scripts/project check`, `./scripts/project release-check`, `./scripts/project check --json`, `./scripts/project doctor --json`, generated command smoke tests, shell syntax, and tracked/untracked whitespace checks passed.
+- Open decision: none for the starter contract; adopting projects still need to replace placeholder project commands and approve any domain-specific specialist role.
+- Next safe action: customize `docs/project-brief.md` and `docs/project-commands.md`, then create the first project-specific compaction and specialist brief.
 
 ## Handoff format
 

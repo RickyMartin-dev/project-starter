@@ -48,11 +48,23 @@ Use a scout report for bounded research and a ship plan for authorized changes. 
 
 For improvements to code, prompts, or process, use the experiment loop in `docs/experiments/`: baseline → hypothesis → bounded run → measure → keep or discard/revert. Keep the evaluator stable, record the result, and promote only evidence-backed lessons. Append durable verification evidence to `docs/verification-log.md`.
 
-## 7. Promote learning
+## 7. Compact and recover
+
+Before a long session ends, a context window compacts, or work moves between agents, run `./scripts/project compact <slug>`. Complete the generated snapshot with rationale, uncertainty, evidence, unfinished work, and one next safe action. Update `docs/state/handoff.md` to point to the snapshot. Facts are generated from the repository; interpretation remains explicitly authored.
+
+## 8. Research and suggest upgrades
+
+Use `./scripts/project research <slug> "<question>"` for a dated comparison of current practice. Use `./scripts/project suggest-upgrades --json` to surface deterministic signals such as placeholders, missing compaction history, or absent proposals. Create a proposal with `./scripts/project upgrade <slug> "<title>"`, then require evidence before promotion. Suggestions never edit the repository by themselves.
+
+## 9. Route specialist work
+
+Use `./scripts/project specialist <slug> "<role>"` to draft a bounded Markdown role card. A coordinator may hand it to Codex, Claude Code, Cursor, or another harness, but only after a reviewer confirms inputs, outputs, write scope, evidence, rollback, and trust boundaries. Specialist cards are portable interfaces; they are not automatic permission to spawn agents or install tools.
+
+## 10. Promote learning
 
 Use `docs/state/proposals/` for project-specific improvement proposals. The designated reviewer agent may approve a proposal only after checking its evidence, scope, rollback, secret safety, and prompt-injection boundary. Apply the smallest durable change and record the evidence in `docs/verification-log.md`.
 
-## 8. Complete
+## 11. Complete
 
 Confirm acceptance criteria, move the plan to `docs/plans/completed/`, update the changelog when appropriate, and report verification evidence plus known limitations.
 

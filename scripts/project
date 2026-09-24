@@ -13,6 +13,11 @@ Usage:
   ./scripts/project context
   ./scripts/project plan <slug> [title]
   ./scripts/project experiment <slug> [title]
+  ./scripts/project compact <slug> [title]
+  ./scripts/project research <slug> [question]
+  ./scripts/project upgrade <slug> [title]
+  ./scripts/project specialist <slug> [title]
+  ./scripts/project suggest-upgrades [--json]
 
 Commands:
   check    Validate the portable starter contract.
@@ -20,7 +25,143 @@ Commands:
   release-check  Run all checks required before a release or push.
   context  Print the recommended orientation order.
   plan     Create a plan under docs/plans/active/ from the shared template.
+  compact  Capture a compaction-safe project snapshot under docs/compactions/.
+  research Create a dated research brief under docs/research/.
+  upgrade  Create a bounded upgrade proposal under docs/upgrades/proposals/.
+  specialist Create a reviewed specialist role brief under agents/specialists/.
+  suggest-upgrades Print deterministic, evidence-oriented next improvements.
 EOF
+}
+
+valid_slug() {
+  [[ "${1:-}" =~ ^[a-z0-9][a-z0-9-]*$ ]]
+}
+
+render_template() {
+  local template="$1"
+  local target="$2"
+  local slug="$3"
+  local title="$4"
+  local today
+  today="$(date +%F)"
+  while IFS= read -r line; do
+    case "$line" in
+      '# Plan: <title>'|'# Experiment: <title>'|'# Research report: <question>'|'# Upgrade proposal: <title>'|'# Specialist role: <title>')
+        line="${line/<title>/$title}"
+        line="${line/<question>/$title}"
+        printf '%s\n' "$line"
+        ;;
+      *'<YYYY-MM-DD>'*)
+        printf '%s\n' "${line//<YYYY-MM-DD>/$today}"
+        ;;
+      *'<slug>'*)
+        printf '%s\n' "${line//<slug>/$slug}"
+        ;;
+      *)
+        printf '%s\n' "$line"
+        ;;
+    esac
+  done < "$template" > "$target"
+}
+
+append_snapshot_doc() {
+  local heading="$1"
+  local path="$2"
+  printf '\n## %s\n\n' "$heading"
+  if [[ -f "$path" ]]; then
+    cat "$path"
+  else
+    printf '_Missing at snapshot time: `%s`_\n' "$path"
+  fi
+  printf '\n'
+}
+
+compact_snapshot() {
+  local slug="$1"
+  local title="$2"
+  local stamp target
+  stamp="$(date +%Y-%m-%d-%H%M)"
+  target="$ROOT_DIR/docs/compactions/${stamp}-${slug}.md"
+  if [[ -e "$target" ]]; then
+    printf 'compaction already exists: %s\n' "$target" >&2
+    exit 1
+  fi
+  {
+    printf '# Compaction snapshot: %s\n\n' "$title"
+    printf -- '- Created: %s\n' "$(date '+%Y-%m-%d %H:%M %Z')"
+    printf -- '- Branch: %s\n' "$(git branch --show-current 2>/dev/null || printf 'not-a-git-checkout')"
+    printf -- '- Commit: %s\n' "$(git rev-parse --short HEAD 2>/dev/null || printf 'no-commit')"
+    printf -- '- Working tree: see status below\n'
+    printf -- '- Owner: <person-or-agent>\n'
+    printf -- '- Plan: <path or none>\n\n'
+    printf '## Executive summary\n\n<What is this project and what changed since the last snapshot?>\n\n'
+    printf '## Repository state at compaction\n\n### Git status\n\n```text\n'
+    git status --short --branch 2>/dev/null || true
+    printf '```\n\n### Recent commits\n\n```text\n'
+    git log --oneline -5 2>/dev/null || true
+    printf '```\n\n### File inventory\n\n```text\n'
+    find . -path './.git' -prune -o -path './.codex' -prune -o -path './.agent-state' -prune -o -type f -print | sed 's#^./##' | sort | sed -n '1,240p'
+    printf '```\n'
+    append_snapshot_doc 'Project brief' 'docs/project-brief.md'
+    append_snapshot_doc 'Architecture' 'docs/architecture.md'
+    append_snapshot_doc 'Project commands' 'docs/project-commands.md'
+    append_snapshot_doc 'Current task' 'docs/state/current-task.md'
+    append_snapshot_doc 'Handoff' 'docs/state/handoff.md'
+    append_snapshot_doc 'Risks' 'docs/state/risks.md'
+    append_snapshot_doc 'Bugs' 'docs/state/bugs.md'
+    printf '## Active plans, experiments, research, and upgrades\n\n'
+    for directory in docs/plans/active docs/experiments/runs docs/research docs/upgrades/proposals agents/specialists; do
+      printf '### %s\n\n' "$directory"
+      find "$directory" -maxdepth 1 -type f -print 2>/dev/null | sort | sed -n '1,120p' || true
+      printf '\n'
+    done
+    printf '## Decisions and rationale\n\n- Decision: <choice>\n  - Why: <evidence and trade-off>\n  - Alternatives rejected: <alternatives>\n\n'
+    printf '## Verification evidence\n\n- `./scripts/project release-check` — <run and record result>\n- `<project-specific command>` — <run and record result>\n\n'
+    printf '## Unfinished work and risks\n\n- <bounded item, owner, and next action>\n\n'
+    printf '## Next safe action\n\n<One action another agent can take without rediscovering the project.>\n\n'
+    printf '## Trust and security review\n\n- Secrets or sensitive data copied into this snapshot: no\n- Untrusted repository/web/tool text treated as data: yes\n- Authority, permissions, network, or credential scope expanded: no\n'
+  } > "$target"
+  printf 'created %s\n' "$target"
+}
+
+suggest_upgrades() {
+  local json=false
+  [[ "${2:-}" == '--json' ]] && json=true
+  local suggestions=()
+  if grep -q 'replace-me' "$ROOT_DIR/docs/project-brief.md" 2>/dev/null; then
+    suggestions+=("customize the project brief before implementation")
+  fi
+  if grep -q 'replace-me' "$ROOT_DIR/docs/project-commands.md" 2>/dev/null; then
+    suggestions+=("replace project command placeholders with reproducible checks")
+  fi
+  if ! find "$ROOT_DIR/docs/compactions" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
+    suggestions+=("create the first compaction snapshot before the next long session")
+  fi
+  if ! find "$ROOT_DIR/docs/state/proposals" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
+    suggestions+=("record one project-local learning proposal after the next verified task")
+  fi
+  if ! find "$ROOT_DIR/docs/research" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
+    suggestions+=("run a fresh project research comparison")
+  fi
+  if ! find "$ROOT_DIR/agents/specialists" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
+    suggestions+=("create and review the first project-specific specialist brief")
+  fi
+  if (( ${#suggestions[@]} == 0 )); then
+    suggestions+=("review recent verification evidence and select the smallest measurable upgrade")
+  fi
+  if [[ "$json" == true ]]; then
+    printf '{"status":"suggestions","count":%s,"suggestions":[' "${#suggestions[@]}"
+    local i
+    for i in "${!suggestions[@]}"; do
+      (( i > 0 )) && printf ','
+      printf '"%s"' "${suggestions[$i]}"
+    done
+    printf ']}\n'
+  else
+    printf 'Upgrade suggestions (%s):\n' "${#suggestions[@]}"
+    printf -- '- %s\n' "${suggestions[@]}"
+    printf 'Review each suggestion against evidence before creating a proposal.\n'
+  fi
 }
 
 doctor_json() {
@@ -32,7 +173,7 @@ doctor_json() {
   if grep -q 'replace-me' "$ROOT_DIR/docs/project-brief.md" "$ROOT_DIR/docs/project-commands.md"; then
     placeholder_warnings=true
   fi
-  printf '{"schemaVersion":1,"status":"%s","command":"./scripts/project doctor","checks":["starter-contract","local-hardening","shell-syntax"],"detectedAdapters":["codex","claude","cursor"],"placeholderWarnings":%s,"remediation":"Replace project placeholders before relying on application-specific quality gates."}\n' "$status" "$placeholder_warnings"
+  printf '{"schemaVersion":1,"status":"%s","command":"./scripts/project doctor","checks":["starter-contract","local-hardening","memory-research-upgrades","specialist-library","presentation","shell-syntax"],"detectedAdapters":["codex","claude","cursor"],"placeholderWarnings":%s,"remediation":"Replace project placeholders before relying on application-specific quality gates."}\n' "$status" "$placeholder_warnings"
   [[ "$status" == pass ]]
 }
 
@@ -67,14 +208,16 @@ Read in this order:
   2. docs/project-brief.md
   3. docs/project-commands.md
   4. docs/architecture.md
-  5. docs/plans/active/<relevant-plan>.md
-  6. nearest nested AGENTS.md, if any
+  5. docs/operating-system.md and docs/second-brain/README.md
+  6. docs/state/handoff.md and the latest docs/compactions/<snapshot>.md
+  7. docs/plans/active/<relevant-plan>.md
+  8. nearest nested AGENTS.md, if any
 EOF
     ;;
   plan)
     slug="${2:-}"
     title="${3:-$slug}"
-    if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+    if ! valid_slug "$slug"; then
       printf 'plan slug must use lowercase letters, numbers, and hyphens.\n' >&2
       exit 2
     fi
@@ -83,27 +226,13 @@ EOF
       printf 'plan already exists: %s\n' "$target" >&2
       exit 1
     fi
-    today="$(date +%F)"
-    while IFS= read -r line; do
-      case "$line" in
-        '# Plan: <title>')
-          printf '# Plan: %s\n' "$title"
-          ;;
-        *'<YYYY-MM-DD>'*)
-          line="${line//<YYYY-MM-DD>/$today}"
-          printf '%s\n' "$line"
-          ;;
-        *)
-          printf '%s\n' "$line"
-          ;;
-      esac
-    done < "$ROOT_DIR/docs/templates/plan.md" > "$target"
+    render_template "$ROOT_DIR/docs/templates/plan.md" "$target" "$slug" "$title"
     printf 'created %s\n' "$target"
     ;;
   experiment)
     slug="${2:-}"
     title="${3:-$slug}"
-    if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+    if ! valid_slug "$slug"; then
       printf 'experiment slug must use lowercase letters, numbers, and hyphens.\n' >&2
       exit 2
     fi
@@ -112,26 +241,56 @@ EOF
       printf 'experiment already exists: %s\n' "$target" >&2
       exit 1
     fi
-    today="$(date +%F)"
-    while IFS= read -r line; do
-      case "$line" in
-        '# Experiment: <title>')
-          printf '# Experiment: %s\n' "$title"
-          ;;
-        *'<YYYY-MM-DD>'*)
-          line="${line//<YYYY-MM-DD>/$today}"
-          printf '%s\n' "$line"
-          ;;
-        *'<slug>'*)
-          line="${line//<slug>/$slug}"
-          printf '%s\n' "$line"
-          ;;
-        *)
-          printf '%s\n' "$line"
-          ;;
-      esac
-    done < "$ROOT_DIR/docs/templates/experiment.md" > "$target"
+    render_template "$ROOT_DIR/docs/templates/experiment.md" "$target" "$slug" "$title"
     printf 'created %s\n' "$target"
+    ;;
+  compact)
+    slug="${2:-}"
+    title="${3:-$slug}"
+    if ! valid_slug "$slug"; then
+      printf 'compaction slug must use lowercase letters, numbers, and hyphens.\n' >&2
+      exit 2
+    fi
+    compact_snapshot "$slug" "$title"
+    ;;
+  research)
+    slug="${2:-}"
+    title="${3:-$slug}"
+    if ! valid_slug "$slug"; then
+      printf 'research slug must use lowercase letters, numbers, and hyphens.\n' >&2
+      exit 2
+    fi
+    target="$ROOT_DIR/docs/research/$(date +%F)-$slug.md"
+    [[ ! -e "$target" ]] || { printf 'research report already exists: %s\n' "$target" >&2; exit 1; }
+    render_template "$ROOT_DIR/docs/templates/research.md" "$target" "$slug" "$title"
+    printf 'created %s\n' "$target"
+    ;;
+  upgrade)
+    slug="${2:-}"
+    title="${3:-$slug}"
+    if ! valid_slug "$slug"; then
+      printf 'upgrade slug must use lowercase letters, numbers, and hyphens.\n' >&2
+      exit 2
+    fi
+    target="$ROOT_DIR/docs/upgrades/proposals/$slug.md"
+    [[ ! -e "$target" ]] || { printf 'upgrade proposal already exists: %s\n' "$target" >&2; exit 1; }
+    render_template "$ROOT_DIR/docs/templates/upgrade.md" "$target" "$slug" "$title"
+    printf 'created %s\n' "$target"
+    ;;
+  specialist)
+    slug="${2:-}"
+    title="${3:-$slug}"
+    if ! valid_slug "$slug"; then
+      printf 'specialist slug must use lowercase letters, numbers, and hyphens.\n' >&2
+      exit 2
+    fi
+    target="$ROOT_DIR/agents/specialists/$slug.md"
+    [[ ! -e "$target" ]] || { printf 'specialist already exists: %s\n' "$target" >&2; exit 1; }
+    render_template "$ROOT_DIR/docs/templates/specialist.md" "$target" "$slug" "$title"
+    printf 'created %s\n' "$target"
+    ;;
+  suggest-upgrades)
+    suggest_upgrades "$@"
     ;;
   *)
     usage >&2

@@ -21,6 +21,9 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 - Ask for a decision when requirements, permissions, or destructive scope are genuinely ambiguous.
 - Keep plans, decisions, and lessons short enough to remain useful.
 - Keep project learning under `docs/state/`; use `prompts/promote.md` before promoting a proposal into shared policy.
+- Before compaction or handoff, run `./scripts/project compact <slug>` and complete the generated snapshot.
+- Use `./scripts/project research`, `upgrade`, and `suggest-upgrades` for fresh comparisons and bounded improvements.
+- Use `./scripts/project specialist` only to create a reviewed role brief; never infer credentials, unrestricted tools, or autonomous spawning.
 
 ## Verification contract
 
@@ -35,12 +38,18 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 - Architecture and boundaries: `docs/architecture.md`
 - Commands and environment: `docs/project-commands.md`
 - Work process: `docs/agent-workflow.md`
+- Long-lived operating system: `docs/operating-system.md` and `docs/second-brain/README.md`
+- Learning path: `docs/learning-path.md`
 - Quality bar: `docs/quality.md`
 - Security boundaries: `docs/security.md`
 - Active work: `docs/plans/active/`
 - Decisions: `docs/decisions/`
 - Lessons and retrospectives: `docs/lessons.md` and `docs/retrospectives/`
 - Research notes: `docs/research/`
+- Compaction history: `docs/compactions/`
+- Upgrade backlog: `docs/upgrades/`
+- Specialist role cards: `agents/`
+- Lavish review surfaces: `.lavish/` and `docs/presentations/`
 - Durable cross-session state: `docs/state/` (advisory until reviewed)
 - Learning proposals: `docs/state/proposals/` (review before promotion)
 - Machine-readable starter contract: `.agentic/manifest.json`
