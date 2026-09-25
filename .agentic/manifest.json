@@ -5,6 +5,12 @@
   "docsRoot": "docs/",
   "doctorCommand": "./scripts/project doctor",
   "releaseCheckCommand": "./scripts/project release-check",
+  "startCommand": "./scripts/project start --task <request>",
+  "finishCommand": "./scripts/project finish --summary <outcome>",
+  "autopilotPrompt": "prompts/autopilot.md",
+  "localContextDirectory": ".agent-state/",
+  "automaticHandoff": "docs/state/automatic-handoff.md",
+  "hooksDirectory": ".githooks/",
   "learningProposalDirectory": "docs/state/proposals/",
   "promotionPrompt": "prompts/promote.md",
   "compactionCommand": "./scripts/project compact <slug>",
@@ -28,7 +34,8 @@
     "compact",
     "upgrade",
     "specialist",
-    "present"
+    "present",
+    "autopilot"
   ],
   "hardeningChecks": [
     "scripts/check-secrets.sh",
@@ -41,7 +48,8 @@
     "scripts/check-research.sh",
     "scripts/check-upgrades.sh",
     "scripts/check-specialists.sh",
-    "scripts/check-presentation.sh"
+    "scripts/check-presentation.sh",
+    "scripts/check-automation.sh"
   ],
   "adapterSurfaces": [
     "CLAUDE.md",
@@ -60,6 +68,7 @@
     "docs/architecture.md",
     "docs/operating-system.md",
     "docs/compactions/",
+    "docs/state/automatic-handoff.md",
     "docs/research/",
     "docs/upgrades/",
     "agents/specialists/"

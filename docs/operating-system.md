@@ -2,6 +2,8 @@
 
 This starter is a repository-local operating system for long-lived agentic work. It is intentionally language- and domain-agnostic: the project supplies its runtime commands, while this repository supplies the memory, research, upgrade, specialist, and verification contracts.
 
+The normal user experience is automatic. Agents run `./scripts/project start --task "<request>"` before substantive work and `./scripts/project finish --summary "<outcome>"` after verification. The commands refresh local orientation, install hooks, capture durable context, and update the handoff without asking the user to perform routine project management.
+
 ## The loop
 
 ```text

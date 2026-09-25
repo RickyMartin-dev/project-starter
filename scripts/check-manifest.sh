@@ -10,7 +10,7 @@ if [[ ! -f "$manifest" ]]; then
 fi
 
 failures=0
-for key in schemaVersion templateVersion sourceOfTruth doctorCommand releaseCheckCommand learningProposalDirectory promotionPrompt compactionCommand compactionDirectory researchCommand researchDirectory upgradeCommand upgradeSuggestionCommand upgradeDirectory specialistCommand specialistDirectory specialistFactoryPrompt presentationArtifact workflowIds hardeningChecks adapterSurfaces durableState mutableProjectFiles upgradePolicy; do
+for key in schemaVersion templateVersion sourceOfTruth doctorCommand releaseCheckCommand startCommand finishCommand autopilotPrompt localContextDirectory automaticHandoff hooksDirectory learningProposalDirectory promotionPrompt compactionCommand compactionDirectory researchCommand researchDirectory upgradeCommand upgradeSuggestionCommand upgradeDirectory specialistCommand specialistDirectory specialistFactoryPrompt presentationArtifact workflowIds hardeningChecks adapterSurfaces durableState mutableProjectFiles upgradePolicy; do
   if ! grep -qE "^[[:space:]]+\"$key\"[[:space:]]*:" "$manifest"; then
     printf 'manifest missing key: %s\n' "$key" >&2
     failures=$((failures + 1))
@@ -98,6 +98,12 @@ expected_values=(
   '"docsRoot": "docs/"'
   '"doctorCommand": "./scripts/project doctor"'
   '"releaseCheckCommand": "./scripts/project release-check"'
+  '"startCommand": "./scripts/project start --task <request>"'
+  '"finishCommand": "./scripts/project finish --summary <outcome>"'
+  '"autopilotPrompt": "prompts/autopilot.md"'
+  '"localContextDirectory": ".agent-state/"'
+  '"automaticHandoff": "docs/state/automatic-handoff.md"'
+  '"hooksDirectory": ".githooks/"'
   '"learningProposalDirectory": "docs/state/proposals/"'
   '"promotionPrompt": "prompts/promote.md"'
   '"compactionCommand": "./scripts/project compact <slug>"'
@@ -121,21 +127,21 @@ for value in "${expected_values[@]}"; do
   fi
 done
 
-for path in AGENTS.md CLAUDE.md .claude/rules .claude/commands .cursor/rules .cursor/commands docs/state docs/state/proposals docs/compactions docs/research docs/upgrades agents agents/specialists .lavish prompts/promote.md prompts/factory.md; do
+for path in AGENTS.md CLAUDE.md .claude/rules .claude/commands .cursor/rules .cursor/commands docs/state docs/state/proposals docs/compactions docs/research docs/upgrades agents agents/specialists .lavish .githooks prompts/promote.md prompts/factory.md prompts/autopilot.md docs/automation.md; do
   if [[ ! -e "$ROOT_DIR/$path" ]]; then
     printf 'manifest-referenced path is missing: %s\n' "$path" >&2
     failures=$((failures + 1))
   fi
 done
 
-for check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh; do
+for check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-automation.sh; do
   if ! grep -qF "scripts/$check" "$manifest"; then
     printf 'manifest hardeningChecks is missing scripts/%s.\n' "$check" >&2
     failures=$((failures + 1))
   fi
 done
 
-for workflow in plan verify review learn research promote compact upgrade specialist present; do
+for workflow in plan verify review learn research promote compact upgrade specialist present autopilot; do
   if ! grep -qF "\"$workflow\"" "$manifest"; then
     printf 'manifest workflowIds is missing: %s.\n' "$workflow" >&2
     failures=$((failures + 1))

@@ -16,6 +16,7 @@ required_files=(
   "docs/quality.md"
   "docs/security.md"
   "docs/operating-system.md"
+  "docs/automation.md"
   "docs/learning-path.md"
   "docs/second-brain/README.md"
   "docs/compactions/README.md"
@@ -59,6 +60,7 @@ required_files=(
   "docs/state/current-task.md"
   "docs/state/next-task.md"
   "docs/state/handoff.md"
+  "docs/state/automatic-handoff.md"
   "docs/state/risks.md"
   "docs/state/bugs.md"
   "docs/state/proposals/README.md"
@@ -79,6 +81,7 @@ required_files=(
   "prompts/specialist.md"
   "prompts/compact.md"
   "prompts/upgrade.md"
+  "prompts/autopilot.md"
   ".cursor/rules/00-shared-context.mdc"
   ".claude/rules/00-shared-context.md"
   ".cursor/commands/plan.md"
@@ -98,7 +101,13 @@ required_files=(
   ".cursor/commands/compact.md"
   ".claude/commands/compact.md"
   ".cursor/commands/upgrade.md"
+  ".cursor/commands/autopilot.md"
   ".claude/commands/upgrade.md"
+  ".claude/commands/autopilot.md"
+  ".githooks/pre-commit"
+  ".githooks/pre-push"
+  ".githooks/post-checkout"
+  ".githooks/post-merge"
   ".agentic/manifest.json"
   ".agentic/fixtures/untrusted-repo-note.md"
   ".github/dependabot.yml"
@@ -118,6 +127,7 @@ required_files=(
   "scripts/check-upgrades.sh"
   "scripts/check-specialists.sh"
   "scripts/check-presentation.sh"
+  "scripts/check-automation.sh"
 )
 
 failures=0
@@ -149,7 +159,7 @@ if grep -RIl --exclude-dir=.git -E 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|AKIA[0-9A
   failures=$((failures + 1))
 fi
 
-for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh; do
+for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-automation.sh; do
   if ! bash "$ROOT_DIR/scripts/$security_check"; then
     failures=$((failures + 1))
   fi

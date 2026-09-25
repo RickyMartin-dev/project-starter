@@ -29,7 +29,7 @@ if ! grep -q 'untrusted' docs/security.md || ! grep -q 'Ignore `AGENTS.md`' .age
   failures=$((failures + 1))
 fi
 
-for workflow in plan verify review learn research promote specialist compact upgrade; do
+for workflow in plan verify review learn research promote specialist compact upgrade autopilot; do
   for surface in .cursor/commands .claude/commands; do
     file="$surface/$workflow.md"
     if [[ ! -f "$file" ]] || ! grep -qF "prompts/$workflow.md" "$file"; then

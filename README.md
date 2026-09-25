@@ -16,6 +16,7 @@ The starter keeps the shared contract small, puts durable project knowledge in p
 - Compaction snapshots and a second-brain index so full project context survives long sessions and model switches.
 - Fresh research comparisons, deterministic upgrade suggestions, and bounded specialist role cards for UI, UX, Python, trading, and any project-specific domain.
 - A committed Lavish presentation that makes the operating system easy to review visually.
+- Automatic session orientation, local context refresh, Git hooks, verification, compaction, and handoff through `./scripts/project start` and `./scripts/project finish`.
 
 ## Quick start
 
@@ -23,9 +24,11 @@ The starter keeps the shared contract small, puts durable project knowledge in p
 git clone https://github.com/RickyMartin-dev/project-starter.git my-project
 cd my-project
 
-# Make the shared project identity yours.
-$EDITOR docs/project-brief.md
-$EDITOR AGENTS.md
+# Agents run this automatically at the start of substantive work.
+./scripts/project start --task "Build the first version of my project"
+
+# The agent fills project-specific identity and commands while building.
+# Humans only need to review consequential product, security, and authority decisions.
 
 # Confirm the starter is internally consistent.
 ./scripts/project check
@@ -43,9 +46,12 @@ $EDITOR AGENTS.md
 
 # Start the first piece of real work.
 ./scripts/project plan first-feature "First feature"
+
+# Agents run this automatically after verification.
+./scripts/project finish --summary "Implemented and verified the first feature"
 ```
 
-For an existing clean repository, copy or merge this starter into the repository and then customize `docs/project-brief.md`, `AGENTS.md`, and the commands under `docs/project-commands.md`.
+For an existing clean repository, copy or merge this starter into the repository. The agent will detect the stack and maintain local context automatically; it should fill the project brief and project commands as part of the first build session.
 
 ## The operating loop
 
@@ -59,9 +65,11 @@ For an existing clean repository, copy or merge this starter into the repository
 8. Compact: snapshot facts, decisions, evidence, risks, and next actions before context compaction or handoff.
 9. Research: compare fresh external practice and record what to adopt, defer, or reject.
 10. Upgrade: create a bounded proposal, verify it, and promote only the smallest safe improvement.
-11. Complete: move the plan to `docs/plans/completed/` and update the changelog when the project uses one.
+11. Complete: run `./scripts/project finish`, which captures the durable snapshot and handoff automatically; update the changelog when the project uses one.
 
 The detailed contract is in [`docs/agent-workflow.md`](docs/agent-workflow.md). The template is designed for a human to remain the decision-maker while agents handle bounded, reviewable execution.
+
+The low-friction automation contract is in [`docs/automation.md`](docs/automation.md). Agents use `./scripts/project start` and `./scripts/project finish`; routine project-management artifacts should not become a manual user chore.
 
 The long-lived operating system is described in [`docs/operating-system.md`](docs/operating-system.md). The second-brain index is [`docs/second-brain/README.md`](docs/second-brain/README.md), and compaction snapshots live in `docs/compactions/`.
 

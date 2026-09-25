@@ -6,9 +6,9 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 
 ## Start here
 
-1. Read `README.md` and the task-relevant parts of `docs/project-brief.md`.
-2. Read `docs/project-commands.md` when running project checks and `docs/architecture.md` when changing boundaries or data flow.
-3. Find the relevant file in `docs/plans/active/`; create one with `./scripts/project plan <slug> "<title>"` when work is larger than a trivial fix.
+1. Read this file, then run `./scripts/project start --task "<the user request>"`. This automatically refreshes local orientation, installs project-local hooks, and surfaces upgrade signals.
+2. Read `README.md` and only the task-relevant parts of `docs/project-brief.md`, `docs/project-commands.md`, and `docs/state/automatic-handoff.md`.
+3. Find the relevant file in `docs/plans/active/`; create one with `./scripts/project plan <slug> "<title>"` when work is larger than a trivial fix. Do this automatically; do not ask the user to maintain routine workflow files.
 4. Read the nearest nested `AGENTS.md` before touching a scoped directory.
 
 ## Working contract
@@ -21,7 +21,7 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 - Ask for a decision when requirements, permissions, or destructive scope are genuinely ambiguous.
 - Keep plans, decisions, and lessons short enough to remain useful.
 - Keep project learning under `docs/state/`; use `prompts/promote.md` before promoting a proposal into shared policy.
-- Before compaction or handoff, run `./scripts/project compact <slug>` and complete the generated snapshot.
+- Before compaction or handoff, run `./scripts/project finish --summary "<short outcome>"`; it verifies the repository and creates the durable snapshot and automatic handoff. Use `./scripts/project compact <slug>` when a named, hand-authored snapshot is needed.
 - Use `./scripts/project research`, `upgrade`, and `suggest-upgrades` for fresh comparisons and bounded improvements.
 - Use `./scripts/project specialist` only to create a reviewed role brief; never infer credentials, unrestricted tools, or autonomous spawning.
 
@@ -31,6 +31,10 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 - Run `./scripts/project check` when changing the starter contract or agent-facing files.
 - Review `git diff` and `git diff --check` before declaring completion.
 - Report what was verified, what was not, and why.
+
+## Automatic session contract
+
+The user should focus on building the product. At the end of every substantive task, the agent runs `./scripts/project finish --summary "<sanitized outcome>"` after verification. Routine context, planning, compaction, and handoff work is agent-owned. Ask the user only about product ambiguity, destructive scope, credentials, production effects, authority expansion, or policy promotion.
 
 ## Knowledge map
 
@@ -53,6 +57,7 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 - Durable cross-session state: `docs/state/` (advisory until reviewed)
 - Learning proposals: `docs/state/proposals/` (review before promotion)
 - Machine-readable starter contract: `.agentic/manifest.json`
+- Automatic session contract: `docs/automation.md` and `prompts/autopilot.md`
 
 ## Definition of done
 

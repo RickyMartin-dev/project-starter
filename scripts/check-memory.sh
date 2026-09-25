@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 failures=0
-for path in docs/operating-system.md docs/second-brain/README.md docs/compactions/README.md docs/compactions/.gitkeep docs/templates/compaction.md docs/state/handoff.md docs/state/current-task.md; do
+for path in docs/operating-system.md docs/automation.md docs/second-brain/README.md docs/compactions/README.md docs/compactions/.gitkeep docs/templates/compaction.md docs/state/handoff.md docs/state/automatic-handoff.md docs/state/current-task.md; do
   if [[ ! -e "$path" ]]; then
     printf 'memory check missing: %s\n' "$path" >&2
     failures=$((failures + 1))

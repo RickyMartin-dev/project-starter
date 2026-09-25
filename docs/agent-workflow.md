@@ -2,6 +2,8 @@
 
 This is the repeatable operating system for work in this repository. Adapt the commands and artifacts to the project, but keep the state transitions visible.
 
+The routine path is agent-operated. Begin with `./scripts/project start --task "<request>"` and end with `./scripts/project finish --summary "<outcome>"`. Do not make the user maintain plans, compaction snapshots, handoffs, or upgrade suggestions by hand.
+
 ## 1. Orient
 
 Read `AGENTS.md` and the task-relevant parts of `docs/project-brief.md`. Read `docs/project-commands.md` before running checks, `docs/architecture.md` when changing boundaries or data flow, and the relevant plan or decision when one exists. Search before assuming. Identify the smallest set of files that can solve the request.
@@ -50,7 +52,7 @@ For improvements to code, prompts, or process, use the experiment loop in `docs/
 
 ## 7. Compact and recover
 
-Before a long session ends, a context window compacts, or work moves between agents, run `./scripts/project compact <slug>`. Complete the generated snapshot with rationale, uncertainty, evidence, unfinished work, and one next safe action. Update `docs/state/handoff.md` to point to the snapshot. Facts are generated from the repository; interpretation remains explicitly authored.
+Before a long session ends, a context window compacts, or work moves between agents, run `./scripts/project finish --summary "<outcome>"`. This automatically creates a fact-based snapshot and updates `docs/state/automatic-handoff.md`. Use `./scripts/project compact <slug>` when a named, hand-authored snapshot is needed. Facts are generated from the repository; interpretation remains explicitly authored.
 
 ## 8. Research and suggest upgrades
 
