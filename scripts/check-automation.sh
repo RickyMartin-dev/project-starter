@@ -27,6 +27,13 @@ for command in 'start)' 'finish)' '--task' '--summary' 'core.hooksPath'; do
   fi
 done
 
+for invariant in 'json_safe()' 'suggest_upgrades --json' "tr '\\r\\n\\t'"; do
+  if ! grep -qF -- "$invariant" scripts/project; then
+    printf 'automation check missing safety invariant: %s\n' "$invariant" >&2
+    failures=$((failures + 1))
+  fi
+done
+
 for hook in .githooks/pre-commit .githooks/pre-push .githooks/post-checkout .githooks/post-merge; do
   if [[ ! -x "$hook" ]]; then
     printf 'automation check hook is not executable: %s\n' "$hook" >&2

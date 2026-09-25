@@ -130,7 +130,10 @@ compact_snapshot() {
 
 suggest_upgrades() {
   local json=false
-  [[ "${2:-}" == '--json' ]] && json=true
+  local argument
+  for argument in "$@"; do
+    [[ "$argument" == '--json' ]] && json=true
+  done
   local suggestions=()
   if grep -q 'replace-me' "$ROOT_DIR/docs/project-brief.md" 2>/dev/null; then
     suggestions+=("customize the project brief before implementation")
@@ -191,7 +194,12 @@ sanitize_summary() {
     -e 's/(AKIA[0-9A-Z]{16})/[REDACTED-AWS-KEY]/g' \
     -e 's/(gh[pousr]_[A-Za-z0-9_]{20,})/[REDACTED-GITHUB-TOKEN]/g' \
     -e 's/(sk-[A-Za-z0-9_-]{20,})/[REDACTED-API-KEY]/g' \
-    -e 's/((password|passwd|secret|token|api[_-]?key)[[:space:]]*=[[:space:]]*)[^[:space:]]+/\1[REDACTED]/Ig'
+    -e 's/((password|passwd|secret|token|api[_-]?key)[[:space:]]*=[[:space:]]*)[^[:space:]]+/\1[REDACTED]/Ig' \
+    | tr '\r\n\t' '   ' | sed -E 's/[[:space:]]+/ /g'
+}
+
+json_safe() {
+  sanitize_summary "${1:-}" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
 }
 
 detect_project_signals() {
@@ -271,8 +279,9 @@ install_hooks() {
 automatic_snapshot() {
   local title="$1"
   local summary="$2"
-  local stamp target branch commit safe_summary
+  local stamp target branch commit safe_title safe_summary
   stamp="$(date +%Y-%m-%d-%H%M%S)"
+  mkdir -p "$ROOT_DIR/docs/compactions"
   target="$ROOT_DIR/docs/compactions/${stamp}-automatic-session.md"
   local suffix=1
   while [[ -e "$target" ]]; do
@@ -281,9 +290,10 @@ automatic_snapshot() {
   done
   branch="$(git -C "$ROOT_DIR" branch --show-current 2>/dev/null || printf 'not-a-git-checkout')"
   commit="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || printf 'no-commit')"
+  safe_title="$(sanitize_summary "$title")"
   safe_summary="$(sanitize_summary "$summary")"
   {
-    printf '# Automatic session snapshot: %s\n\n' "$title"
+    printf '# Automatic session snapshot: %s\n\n' "${safe_title:-Automatic project session}"
     printf -- '- Created: %s\n- Branch: %s\n- Commit: %s\n- Owner: agent session\n- Capture mode: automatic, reviewable, repository-local\n\n' "$(date '+%Y-%m-%d %H:%M %Z')" "$branch" "$commit"
     printf '## Outcome\n\n%s\n\n' "${safe_summary:-No summary supplied; inspect the diff and verification log.}"
     printf '## Repository facts\n\n```text\n'
@@ -301,6 +311,7 @@ automatic_handoff() {
   local summary="$2"
   local snapshot="$3"
   local safe_summary
+  mkdir -p "$ROOT_DIR/docs/state"
   safe_summary="$(sanitize_summary "$summary")"
   {
     printf '# Automatic handoff\n\n'
@@ -328,11 +339,11 @@ start_session() {
     exit 1
   fi
   if [[ "$json" == true ]]; then
-    printf '{"status":"ready","task":"%s","localContext":".agent-state/session-context.md","hooks":"%s","next":"implement the user task, then run ./scripts/project finish"}\n' "$(sanitize_summary "$task" | sed 's/"/\\"/g')" "$hooks_status"
+    printf '{"status":"ready","task":"%s","localContext":".agent-state/session-context.md","hooks":"%s","next":"implement the user task, then run ./scripts/project finish"}\n' "$(json_safe "$task")" "$hooks_status"
   else
     printf 'automatic session ready.\n'
     printf 'Local context: .agent-state/session-context.md\nHooks: %s\n' "$hooks_status"
-    printf 'Task: %s\n' "$task"
+    printf 'Task: %s\n' "$(sanitize_summary "$task")"
     printf 'Next: implement the request; finish with ./scripts/project finish --summary "..."\n'
   fi
 }
