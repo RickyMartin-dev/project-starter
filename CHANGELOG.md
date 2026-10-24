@@ -6,6 +6,7 @@ All notable changes to this starter are recorded here.
 
 - Added the cross-agent `update-project-logic` skill for Codex and Claude Code, with fresh-source research, project learning refresh, concise improvement/security reporting, and provider-copy drift checks.
 - Updated the starter manifest and agent workflow to make the skill discoverable at architecture, harness, and repeated-failure milestones.
+- Hardened the freshness workflow to compare installed agent CLI versions and release channels, verify Claude project-skill discovery in linked worktrees, and keep skill metadata concise.
 
 ## 2026-09-24
 

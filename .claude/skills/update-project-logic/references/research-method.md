@@ -5,6 +5,7 @@ Use this reference on each invocation of `update-project-logic`.
 ## Scope the scan
 
 - Start from the project's actual stack, agents, skill formats, hook/config surfaces, current research, and last checked date.
+- When provider CLIs are available, record their exact versions and release channels. Compare them with official stable releases and supported versions; treat prereleases and unidentified local builds separately. Review version-sensitive security, sandbox, hook, compaction, and skill-discovery changes. For Claude Code, verify whether the active version discovers project skills from this checkout or linked worktree.
 - Search for meaningful changes since the last relevant report, then verify current behavior in official documentation or release notes. Also check current official guidance when a feature is already in use, even if no new announcement appears.
 - Focus on AI-assisted software development: coding-agent behavior and releases, skill/instruction formats, harnesses and feedback loops, evaluations, memory/context, security, and project-specific AI frameworks or APIs.
 - Prefer project-relevant changes over an exhaustive news roundup. A feature being new or popular does not make it a fit.
@@ -26,6 +27,8 @@ For each relevant change, answer:
 - Does the project use a compatible version and execution surface?
 - What is the maintenance, security, privacy, migration, or context cost?
 - Can it be trialed and verified reversibly?
+
+For a global CLI update, report the gap and relevant risk; do not install or change the user's tool configuration during this project-local review.
 
 Label the outcome **Adopt**, **Defer**, or **Reject**, with one concise reason. If no credible source or local evidence supports the fit, defer it. Never silently introduce a dependency, permission, network capability, production action, or global configuration.
 

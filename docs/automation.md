@@ -73,6 +73,8 @@ Use the repo skill when the user asks for a freshness review, after a meaningful
 - Claude Code: `/update-project-logic`
 - Codex: `$update-project-logic`
 
+When using Claude Code from a linked worktree, verify that the installed version discovers the main checkout's `.claude/skills/`; skill discovery is version-sensitive.
+
 The skill reconciles verified project learning with canonical docs and relevant provider skills/hooks, audits code/process/security improvements, and checks current official AI-development guidance. It records dated research when evidence changes, reports the few highest-value improvements plainly, and leaves application behavior, global configuration, permissions, dependencies, production actions, and policy promotion behind existing approval gates. It does not claim autonomous model learning or run on a schedule; invoke it at those milestones.
 
 ## What remains intentionally gated

@@ -11,6 +11,7 @@ This starter is deliberately conservative. Agentic tools can read repository con
 - Validate input at trust boundaries and encode output for its destination.
 - Log enough to diagnose behavior, but redact credentials and sensitive payloads.
 - Pin or review third-party actions and dependencies before using them in CI.
+- During project-logic refreshes, compare installed agent CLI versions with official stable releases and review relevant security, sandbox, hook, compaction, and skill-discovery fixes. Report global tool updates; do not install them from the repository.
 - Run `./scripts/project release-check` before pushing starter changes. Its checks cover obvious secrets, workflow pinning and permissions, instruction-surface drift, and the portable manifest.
 - Keep security checks local and deterministic. The starter does not require an MCP server, hosted scanner, remote memory service, or network access to run its release gate.
 - Treat these checks as portable guardrails, not a complete security assessment; adopting projects still need stack-specific dependency, runtime, and deployment review.

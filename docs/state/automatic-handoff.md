@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-10-24 11:11 EDT
-- Snapshot: `docs/compactions/2026-10-24-111111-automatic-session.md`
+- Updated: 2026-10-24 11:40 EDT
+- Snapshot: `docs/compactions/2026-10-24-114031-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Implemented and hardened cross-project snapshots and the Codex/Claude project logic refresh skill; local release checks pass.
+Pushed the project-logic CLI-version and worktree-discovery freshness updates after local release checks.
 
 ## Resume path
 

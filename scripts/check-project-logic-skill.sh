@@ -32,7 +32,7 @@ if (( failures == 0 )); then
     printf 'Codex and Claude project logic eval prompts have drifted.\n' >&2
     failures=$((failures + 1))
   fi
-  if ! grep -q '^name: update-project-logic$' "$codex_skill" || ! grep -q '^description: Refresh project guidance from verified learning' "$codex_skill"; then
+  if ! grep -q '^name: update-project-logic$' "$codex_skill" || ! grep -q '^description: Refresh project guidance, audit improvements and risks' "$codex_skill"; then
     printf 'project logic skill frontmatter is missing its expected name or description.\n' >&2
     failures=$((failures + 1))
   fi
@@ -53,6 +53,10 @@ if (( failures == 0 )); then
   eval_rows="$(wc -l < "$codex_evals" | tr -d ' ')"
   if (( eval_rows < 5 )) || ! grep -q '^case_id,should_trigger,prompt,expected_behavior$' "$codex_evals"; then
     printf 'project logic skill eval set must contain a header and positive/negative cases.\n' >&2
+    failures=$((failures + 1))
+  fi
+  if ! grep -q '^cli_version_drift,true,' "$codex_evals"; then
+    printf 'project logic skill eval set is missing the provider-version drift case.\n' >&2
     failures=$((failures + 1))
   fi
 fi
