@@ -58,6 +58,10 @@ Before a long session ends, a context window compacts, or work moves between age
 
 Use `./scripts/project research <slug> "<question>"` for a dated comparison of current practice. Use `./scripts/project suggest-upgrades --json` to surface deterministic signals such as placeholders, missing compaction history, or absent proposals. Create a proposal with `./scripts/project upgrade <slug> "<title>"`, then require evidence before promotion. Suggestions never edit the repository by themselves.
 
+## Project logic refresh
+
+For a combined freshness pass, use `/update-project-logic` in Claude Code or `$update-project-logic` in Codex. It checks verified project learning, relevant skills/docs/hooks, concrete improvement and security evidence, and current official AI-development practice. It refreshes low-risk project guidance and reports prioritized follow-up work; it does not silently change application behavior or global agent settings.
+
 ## 9. Route specialist work
 
 Use `./scripts/project specialist <slug> "<role>"` to draft a bounded Markdown role card. A coordinator may hand it to Codex, Claude Code, Cursor, or another harness, but only after a reviewer confirms inputs, outputs, write scope, evidence, rollback, and trust boundaries. Specialist cards are portable interfaces; they are not automatic permission to spawn agents or install tools.

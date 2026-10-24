@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 failures=0
-for path in docs/research/README.md docs/research/2026-09-project-operating-system-research.md docs/research/2026-09-luna-operating-system-ecosystems.md docs/research/2026-09-luna-operating-system-governance.md docs/research/2026-09-luna-operating-system-operations.md; do
+for path in docs/research/README.md docs/research/2026-09-project-operating-system-research.md docs/research/2026-09-luna-operating-system-ecosystems.md docs/research/2026-09-luna-operating-system-governance.md docs/research/2026-09-luna-operating-system-operations.md docs/research/2026-10-24-update-project-logic.md; do
   if [[ ! -f "$path" ]]; then
     printf 'research check missing: %s\n' "$path" >&2
     failures=$((failures + 1))
@@ -20,6 +20,10 @@ fi
 for phrase in 'Sources' 'Checked:' 'Recheck' 'Comparison' 'Recommendation'; do
   if ! grep -qF "$phrase" docs/research/2026-09-project-operating-system-research.md; then
     printf 'research report missing section: %s\n' "$phrase" >&2
+    failures=$((failures + 1))
+  fi
+  if ! grep -qF "$phrase" docs/research/2026-10-24-update-project-logic.md; then
+    printf 'project logic research report missing section: %s\n' "$phrase" >&2
     failures=$((failures + 1))
   fi
 done

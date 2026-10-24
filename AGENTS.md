@@ -22,7 +22,10 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 - Keep plans, decisions, and lessons short enough to remain useful.
 - Keep project learning under `docs/state/`; use `prompts/promote.md` before promoting a proposal into shared policy.
 - Before compaction or handoff, run `./scripts/project finish --summary "<short outcome>"`; it verifies the repository and creates the durable snapshot and automatic handoff. Use `./scripts/project compact <slug>` when a named, hand-authored snapshot is needed.
+- Keep `.agent-state/second-brain-checkpoint.md` current at meaningful milestones; optional user-level compaction hooks archive it without storing chat transcripts.
+- Shared second-brain archiving is optional; set `PROJECT_SNAPSHOT_ARCHIVE_ROOT` to a local vault path to mirror snapshots, and leave it unset for repository-only memory.
 - Use `./scripts/project research`, `upgrade`, and `suggest-upgrades` for fresh comparisons and bounded improvements.
+- Use `/update-project-logic` in Claude Code or `$update-project-logic` in Codex for an explicit freshness review, at meaningful architecture/agent-harness milestones, or after a repeated workflow failure. It refreshes verified guidance, audits improvements and risks, and checks current AI development practice.
 - Use `./scripts/project specialist` only to create a reviewed role brief; never infer credentials, unrestricted tools, or autonomous spawning.
 
 ## Verification contract

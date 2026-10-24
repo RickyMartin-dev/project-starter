@@ -2,6 +2,11 @@
 
 All notable changes to this starter are recorded here.
 
+## 2026-10-24
+
+- Added the cross-agent `update-project-logic` skill for Codex and Claude Code, with fresh-source research, project learning refresh, concise improvement/security reporting, and provider-copy drift checks.
+- Updated the starter manifest and agent workflow to make the skill discoverable at architecture, harness, and repeated-failure milestones.
+
 ## 2026-09-24
 
 - Added compaction snapshots, a second-brain index, fresh research comparison, deterministic upgrade suggestions, and a scheduled upgrade-review workflow.

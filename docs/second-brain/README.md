@@ -8,10 +8,12 @@ This directory is the navigational layer for the repository's durable project kn
 | --- | --- | --- |
 | Understand the project | `docs/project-brief.md` | `docs/architecture.md` |
 | Resume after compaction | `docs/state/handoff.md` | latest `docs/compactions/*.md` |
+| Share task snapshots across repositories | optional `PROJECT_SNAPSHOT_ARCHIVE_ROOT` | vault `raw/project-snapshots/` and its index/log |
 | Make a decision | `docs/decisions/README.md` | relevant decision record |
 | Run or verify code | `docs/project-commands.md` | `docs/quality.md` |
 | Learn from failure | `docs/state/bugs.md` | `docs/lessons.md`, `docs/retrospectives/` |
 | Compare outside ideas | `docs/research/README.md` | latest research report |
+| Refresh project logic and current AI practice | `/update-project-logic` in Claude Code or `$update-project-logic` in Codex | matching provider-native repo skill |
 | Choose next improvement | `docs/upgrades/backlog.md` | `./scripts/project suggest-upgrades` |
 | Delegate specialist work | `agents/README.md` | matching role card |
 

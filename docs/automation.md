@@ -32,6 +32,25 @@ This command:
 - records only sanitized, repository-local facts;
 - leaves all policy, credential, permission, and external-side-effect decisions reviewable.
 
+Each start also creates `.agent-state/second-brain-checkpoint.md`, an ignored local note for the active task. Keep it current at meaningful milestones so a compaction hook can preserve the latest project context without reading or copying the agent transcript.
+
+Automatic snapshots use the checkpoint's `Open work and next action` entry. If it is missing or still a template placeholder, the snapshot points the next agent to review active plans and upgrade suggestions.
+
+## Optional shared second brain
+
+Projects may mirror snapshots to a user-selected local vault. This feature is opt-in and disabled when `PROJECT_SNAPSHOT_ARCHIVE_ROOT` is unset. When configured, `finish` copies the generated task snapshot to `raw/project-snapshots/<project>/` and adds a catalog entry to `wiki/index.md` and `wiki/log.md` when those files exist. Other vault layouts receive the snapshot files under the same archive folder and can index them with their own conventions.
+
+Manual task snapshot command:
+
+```bash
+PROJECT_SNAPSHOT_ARCHIVE_ROOT="/path/to/your/vault" \
+  ./scripts/project archive-snapshot --agent codex --summary "short verified outcome"
+```
+
+Codex and Claude Code can also use user-level compaction hooks to capture checkpoints. Configure those hooks in the agent's user settings; do not put a personal vault path in a shared project. Claude's post-compaction hook can archive its supplied compact summary. Codex's compaction item is opaque to hooks, so its pre-compaction hook archives the agent-maintained checkpoint instead.
+
+Archive failures are retried once and reported as warnings. They never fail `finish` or block a compaction; the agent should retry at the next safe point. Snapshots contain summaries and repository facts, not raw agent transcripts.
+
 The generated local context is deliberately ignored so routine orientation does not dirty the worktree. Automatic compaction and handoff records are durable Git artifacts because they are part of the project's second brain.
 
 ## Agent adapter behavior
@@ -46,6 +65,15 @@ The agent should not ask the user to manually maintain routine project-managemen
 4. run the documented project checks plus starter checks;
 5. capture a compaction snapshot and handoff;
 6. surface only decisions that genuinely require owner authority.
+
+## Project logic refresh
+
+Use the repo skill when the user asks for a freshness review, after a meaningful architecture or agent-harness change, or when a workflow failure repeats:
+
+- Claude Code: `/update-project-logic`
+- Codex: `$update-project-logic`
+
+The skill reconciles verified project learning with canonical docs and relevant provider skills/hooks, audits code/process/security improvements, and checks current official AI-development guidance. It records dated research when evidence changes, reports the few highest-value improvements plainly, and leaves application behavior, global configuration, permissions, dependencies, production actions, and policy promotion behind existing approval gates. It does not claim autonomous model learning or run on a schedule; invoke it at those milestones.
 
 ## What remains intentionally gated
 

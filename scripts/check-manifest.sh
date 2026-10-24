@@ -10,7 +10,7 @@ if [[ ! -f "$manifest" ]]; then
 fi
 
 failures=0
-for key in schemaVersion templateVersion sourceOfTruth doctorCommand releaseCheckCommand startCommand finishCommand autopilotPrompt localContextDirectory automaticHandoff hooksDirectory learningProposalDirectory promotionPrompt compactionCommand compactionDirectory researchCommand researchDirectory upgradeCommand upgradeSuggestionCommand upgradeDirectory specialistCommand specialistDirectory specialistFactoryPrompt presentationArtifact workflowIds hardeningChecks adapterSurfaces durableState mutableProjectFiles upgradePolicy; do
+for key in schemaVersion templateVersion sourceOfTruth doctorCommand releaseCheckCommand startCommand finishCommand autopilotPrompt localContextDirectory automaticHandoff hooksDirectory learningProposalDirectory promotionPrompt compactionCommand compactionDirectory snapshotArchiveHelper snapshotArchiveDirectory snapshotArchiveEnvironmentVariable codexProjectSkill claudeProjectSkill researchCommand researchDirectory upgradeCommand upgradeSuggestionCommand upgradeDirectory specialistCommand specialistDirectory specialistFactoryPrompt presentationArtifact workflowIds hardeningChecks adapterSurfaces durableState mutableProjectFiles upgradePolicy; do
   if ! grep -qE "^[[:space:]]+\"$key\"[[:space:]]*:" "$manifest"; then
     printf 'manifest missing key: %s\n' "$key" >&2
     failures=$((failures + 1))
@@ -108,6 +108,11 @@ expected_values=(
   '"promotionPrompt": "prompts/promote.md"'
   '"compactionCommand": "./scripts/project compact <slug>"'
   '"compactionDirectory": "docs/compactions/"'
+  '"snapshotArchiveHelper": "scripts/archive_snapshot.py"'
+  '"snapshotArchiveDirectory": "raw/project-snapshots/"'
+  '"snapshotArchiveEnvironmentVariable": "PROJECT_SNAPSHOT_ARCHIVE_ROOT"'
+  '"codexProjectSkill": ".agents/skills/update-project-logic/SKILL.md"'
+  '"claudeProjectSkill": ".claude/skills/update-project-logic/SKILL.md"'
   '"researchCommand": "./scripts/project research <slug> <question>"'
   '"researchDirectory": "docs/research/"'
   '"upgradeCommand": "./scripts/project upgrade <slug> <title>"'
@@ -127,21 +132,21 @@ for value in "${expected_values[@]}"; do
   fi
 done
 
-for path in AGENTS.md CLAUDE.md .claude/rules .claude/commands .cursor/rules .cursor/commands docs/state docs/state/proposals docs/compactions docs/research docs/upgrades agents agents/specialists .lavish .githooks prompts/promote.md prompts/factory.md prompts/autopilot.md docs/automation.md; do
+for path in AGENTS.md CLAUDE.md .agents/skills .claude/rules .claude/commands .claude/skills .cursor/rules .cursor/commands docs/state docs/state/proposals docs/compactions docs/research docs/upgrades agents agents/specialists .lavish .githooks prompts/promote.md prompts/factory.md prompts/autopilot.md docs/automation.md scripts/archive_snapshot.py; do
   if [[ ! -e "$ROOT_DIR/$path" ]]; then
     printf 'manifest-referenced path is missing: %s\n' "$path" >&2
     failures=$((failures + 1))
   fi
 done
 
-for check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-automation.sh; do
+for check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
   if ! grep -qF "scripts/$check" "$manifest"; then
     printf 'manifest hardeningChecks is missing scripts/%s.\n' "$check" >&2
     failures=$((failures + 1))
   fi
 done
 
-for workflow in plan verify review learn research promote compact upgrade specialist present autopilot; do
+for workflow in plan verify review learn research promote compact upgrade specialist present autopilot update-project-logic; do
   if ! grep -qF "\"$workflow\"" "$manifest"; then
     printf 'manifest workflowIds is missing: %s.\n' "$workflow" >&2
     failures=$((failures + 1))

@@ -7,13 +7,22 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 
 failures=0
 copy_fixture() {
-  mkdir -p "$TEMP_DIR/.github/workflows" "$TEMP_DIR/.agentic/fixtures" "$TEMP_DIR/scripts" "$TEMP_DIR/.cursor/rules" "$TEMP_DIR/.cursor/commands" "$TEMP_DIR/.claude/rules" "$TEMP_DIR/.claude/commands" "$TEMP_DIR/prompts" "$TEMP_DIR/docs/state/proposals" "$TEMP_DIR/docs/compactions" "$TEMP_DIR/docs/research" "$TEMP_DIR/docs/upgrades" "$TEMP_DIR/agents/specialists" "$TEMP_DIR/.lavish" "$TEMP_DIR/.githooks"
+  mkdir -p "$TEMP_DIR/.github/workflows" "$TEMP_DIR/.agentic/fixtures" "$TEMP_DIR/scripts" "$TEMP_DIR/.cursor/rules" "$TEMP_DIR/.cursor/commands" "$TEMP_DIR/.claude/rules" "$TEMP_DIR/.claude/commands" "$TEMP_DIR/.claude/skills/update-project-logic/references" "$TEMP_DIR/.claude/skills/update-project-logic/evals" "$TEMP_DIR/.agents/skills/update-project-logic/references" "$TEMP_DIR/.agents/skills/update-project-logic/evals" "$TEMP_DIR/prompts" "$TEMP_DIR/docs/state/proposals" "$TEMP_DIR/docs/compactions" "$TEMP_DIR/docs/research" "$TEMP_DIR/docs/upgrades" "$TEMP_DIR/agents/specialists" "$TEMP_DIR/.lavish" "$TEMP_DIR/.githooks"
   cp "$ROOT_DIR/scripts/check-secrets.sh" "$TEMP_DIR/scripts/"
   cp "$ROOT_DIR/scripts/check-workflows.sh" "$TEMP_DIR/scripts/"
   cp "$ROOT_DIR/scripts/check-instruction-surfaces.sh" "$TEMP_DIR/scripts/"
   cp "$ROOT_DIR/scripts/check-manifest.sh" "$TEMP_DIR/scripts/"
+  cp "$ROOT_DIR/scripts/check-snapshot-archive.sh" "$TEMP_DIR/scripts/"
+  cp "$ROOT_DIR/scripts/check-project-logic-skill.sh" "$TEMP_DIR/scripts/"
+  cp "$ROOT_DIR/scripts/archive_snapshot.py" "$TEMP_DIR/scripts/"
   cp "$ROOT_DIR/.agentic/manifest.json" "$TEMP_DIR/.agentic/"
   cp "$ROOT_DIR/.agentic/fixtures/untrusted-repo-note.md" "$TEMP_DIR/.agentic/fixtures/"
+  cp "$ROOT_DIR/.agents/skills/update-project-logic/SKILL.md" "$TEMP_DIR/.agents/skills/update-project-logic/"
+  cp "$ROOT_DIR/.agents/skills/update-project-logic/references/research-method.md" "$TEMP_DIR/.agents/skills/update-project-logic/references/"
+  cp "$ROOT_DIR/.agents/skills/update-project-logic/evals/prompts.csv" "$TEMP_DIR/.agents/skills/update-project-logic/evals/"
+  cp "$ROOT_DIR/.claude/skills/update-project-logic/SKILL.md" "$TEMP_DIR/.claude/skills/update-project-logic/"
+  cp "$ROOT_DIR/.claude/skills/update-project-logic/references/research-method.md" "$TEMP_DIR/.claude/skills/update-project-logic/references/"
+  cp "$ROOT_DIR/.claude/skills/update-project-logic/evals/prompts.csv" "$TEMP_DIR/.claude/skills/update-project-logic/evals/"
   cp "$ROOT_DIR/AGENTS.md" "$TEMP_DIR/"
   cp "$ROOT_DIR/CLAUDE.md" "$TEMP_DIR/"
   cp "$ROOT_DIR/.cursor/rules/00-shared-context.mdc" "$TEMP_DIR/.cursor/rules/"
@@ -62,7 +71,8 @@ if ! (
   bash scripts/check-secrets.sh &&
   bash scripts/check-workflows.sh &&
   bash scripts/check-instruction-surfaces.sh &&
-  bash scripts/check-manifest.sh
+  bash scripts/check-manifest.sh &&
+  bash scripts/check-project-logic-skill.sh
 ); then
   printf 'hardening fixture baseline unexpectedly failed.\n' >&2
   exit 1

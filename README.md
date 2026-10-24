@@ -13,6 +13,8 @@ The starter keeps the shared contract small, puts durable project knowledge in p
 - A dependency-free `scripts/project` command for orientation, plan creation, and starter checks.
 - Local hardening checks for secrets, workflow supply chain, instruction drift, prompt injection, manifest integrity, and learning proposals.
 - A project-local memory and upgrade loop that lets a reviewer agent promote evidence-backed improvements without global memory or hidden orchestration.
+- A cross-agent `/update-project-logic` skill that refreshes verified project knowledge, reviews improvements and risks, and researches current AI development practice.
+- Optional second-brain snapshot archiving for users who want task snapshots shared across repositories.
 - Compaction snapshots and a second-brain index so full project context survives long sessions and model switches.
 - Fresh research comparisons, deterministic upgrade suggestions, and bounded specialist role cards for UI, UX, Python, trading, and any project-specific domain.
 - A committed Lavish presentation that makes the operating system easy to review visually.
@@ -44,6 +46,10 @@ cd my-project
 ./scripts/project suggest-upgrades
 ./scripts/project specialist domain-role "Project domain specialist"
 
+# Refresh project guidance, review improvements, and check current AI practice.
+# Claude Code: /update-project-logic
+# Codex:       $update-project-logic
+
 # Start the first piece of real work.
 ./scripts/project plan first-feature "First feature"
 
@@ -71,6 +77,8 @@ The detailed contract is in [`docs/agent-workflow.md`](docs/agent-workflow.md). 
 
 The low-friction automation contract is in [`docs/automation.md`](docs/automation.md). Agents use `./scripts/project start` and `./scripts/project finish`; routine project-management artifacts should not become a manual user chore.
 
+Shared second-brain archiving is optional and disabled by default. Set `PROJECT_SNAPSHOT_ARCHIVE_ROOT` to a local vault path to mirror snapshots from this project; the starter does not contain a personal vault path.
+
 The long-lived operating system is described in [`docs/operating-system.md`](docs/operating-system.md). The second-brain index is [`docs/second-brain/README.md`](docs/second-brain/README.md), and compaction snapshots live in `docs/compactions/`.
 
 Use [`docs/learning-path.md`](docs/learning-path.md) to grow autonomy in stages: baseline → continuity → evidence → research → specialists → governed learning → measured autonomy.
@@ -79,8 +87,8 @@ Use [`docs/learning-path.md`](docs/learning-path.md) to grow autonomy in stages:
 
 | Tool | Shared entry point | Native extras in this starter |
 | --- | --- | --- |
-| Codex | `AGENTS.md` | Nested `AGENTS.md` files may scope local conventions. |
-| Claude Code | `CLAUDE.md` → `@AGENTS.md` | `.claude/commands/` mirrors reusable workflows. |
+| Codex | `AGENTS.md` | Repo skills live in `.agents/skills/`; invoke `$update-project-logic`. |
+| Claude Code | `CLAUDE.md` → `@AGENTS.md` | `.claude/skills/` exposes `/update-project-logic`; `.claude/commands/` keeps other reusable workflows. |
 | Cursor | `AGENTS.md` plus `.cursor/rules/` | `.cursor/commands/` exposes slash commands. |
 | Other agents | `README.md`, `docs/`, and `prompts/` | Use the same plan and verification contract. |
 

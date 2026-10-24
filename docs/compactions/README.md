@@ -16,3 +16,5 @@ Each snapshot should identify:
 - project brief, architecture, commands, and quality references;
 - active plans, risks, bugs, experiments, research, and upgrade proposals;
 - what changed, what was verified, what remains uncertain, and the next safe action.
+
+The optional shared archive stores concise summaries and repository facts in a user-selected vault. Keep `.agent-state/second-brain-checkpoint.md` current at meaningful milestones for Codex pre-compaction hooks. Never copy full agent transcripts or raw untrusted payloads into the archive.

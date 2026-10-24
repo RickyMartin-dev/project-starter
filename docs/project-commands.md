@@ -8,6 +8,7 @@ Replace the placeholders with commands that work from a clean checkout. Agents s
 - Dependency install: `replace-me`
 - Required local services: `none | replace-me`
 - Required environment variables: document names and safe placeholders only; never commit values.
+- Optional shared snapshot archive: `PROJECT_SNAPSHOT_ARCHIVE_ROOT` (unset by default; Python 3 is needed only when enabled).
 
 ## Development
 
@@ -27,10 +28,15 @@ replace-me
 
 # Durable context and improvement loop
 ./scripts/project compact <slug> "<handoff title>"
+./scripts/project archive-snapshot --summary "<outcome>" [--agent codex|claude]
 ./scripts/project research <slug> "<research question>"
 ./scripts/project upgrade <slug> "<upgrade title>"
 ./scripts/project suggest-upgrades [--json]
 ./scripts/project specialist <slug> "<role title>"
+
+# Project logic and AI-practice refresh
+# Claude Code: /update-project-logic
+# Codex:       $update-project-logic
 
 # Format
 replace-me
@@ -57,6 +63,7 @@ The starter checks require Bash and standard Git/core shell tools only. Project-
 ## Durable operating artifacts
 
 - Compaction snapshots: `docs/compactions/`.
+- Optional shared snapshot archive: set `PROJECT_SNAPSHOT_ARCHIVE_ROOT` to a local vault root. This setting is unset by default.
 - Research comparisons: `docs/research/`.
 - Upgrade backlog and proposals: `docs/upgrades/`.
 - Specialist role cards: `agents/`.

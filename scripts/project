@@ -8,6 +8,7 @@ usage() {
 Usage:
   ./scripts/project start [--task "request"] [--json]
   ./scripts/project finish [--summary "outcome"] [--json]
+  ./scripts/project archive-snapshot --summary "outcome" [--agent codex|claude]
   ./scripts/project check
   ./scripts/project check --json
   ./scripts/project doctor [--json]
@@ -24,6 +25,7 @@ Usage:
 Commands:
   start    Automatically orient the active agent and refresh local context.
   finish   Automatically verify work and capture a durable handoff.
+  archive-snapshot  Save a concise snapshot to PROJECT_SNAPSHOT_ARCHIVE_ROOT when configured.
   check    Validate the portable starter contract.
   doctor   Validate the starter, with optional machine-readable output.
   release-check  Run all checks required before a release or push.
@@ -279,6 +281,7 @@ install_hooks() {
 automatic_snapshot() {
   local title="$1"
   local summary="$2"
+  local next_action
   local stamp target branch commit safe_title safe_summary
   stamp="$(date +%Y-%m-%d-%H%M%S)"
   mkdir -p "$ROOT_DIR/docs/compactions"
@@ -292,6 +295,7 @@ automatic_snapshot() {
   commit="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || printf 'no-commit')"
   safe_title="$(sanitize_summary "$title")"
   safe_summary="$(sanitize_summary "$summary")"
+  next_action="$(sanitize_summary "$("$ROOT_DIR/scripts/snapshot-next-action.sh" "$state_dir/second-brain-checkpoint.md")")"
   {
     printf '# Automatic session snapshot: %s\n\n' "${safe_title:-Automatic project session}"
     printf -- '- Created: %s\n- Branch: %s\n- Commit: %s\n- Owner: agent session\n- Capture mode: automatic, reviewable, repository-local\n\n' "$(date '+%Y-%m-%d %H:%M %Z')" "$branch" "$commit"
@@ -300,7 +304,7 @@ automatic_snapshot() {
     git -C "$ROOT_DIR" status --short --branch 2>/dev/null || true
     printf '```\n\n'
     printf '## Verification evidence\n\n- `./scripts/project check` — run by automatic finish\n- `./scripts/project release-check` — run by automatic finish\n- `./scripts/project doctor --json` — run during session orientation\n\n'
-    printf '## Next safe action\n\nReview the remaining upgrade suggestions and continue the user-requested build task. Project-specific commands remain authoritative once configured.\n\n'
+    printf '## Next safe action\n\n%s\n\n' "$next_action"
     printf '## Trust and security review\n\n- Secret material copied into this snapshot: no; summary was sanitized.\n- Untrusted repository/web/tool text treated as data: yes.\n- Authority, permissions, network, or credential scope expanded: no.\n'
   } > "$target"
   printf '%s\n' "$target"
@@ -322,6 +326,42 @@ automatic_handoff() {
   } > "$ROOT_DIR/docs/state/automatic-handoff.md"
 }
 
+archive_snapshot_optional() {
+  local snapshot="$1"
+  local archive_root="${PROJECT_SNAPSHOT_ARCHIVE_ROOT:-}"
+  local archive_agent="${PROJECT_SNAPSHOT_AGENT:-agent}"
+  if [[ -z "$archive_root" ]]; then
+    return 0
+  fi
+  if ! python3 "$ROOT_DIR/scripts/archive_snapshot.py" \
+    --archive-root "$archive_root" \
+    --project-dir "$ROOT_DIR" \
+    --agent "$archive_agent" \
+    --kind task \
+    --trigger task-finish \
+    --snapshot-file "$snapshot"; then
+    printf 'warning: local finish succeeded, but second-brain snapshot archiving failed; retry when the archive is available.\n' >&2
+    return 1
+  fi
+}
+
+refresh_snapshot_checkpoint() {
+  local task="$1"
+  local checkpoint="$state_dir/second-brain-checkpoint.md"
+  if [[ "$task" == 'interactive agent session' && -f "$checkpoint" ]]; then
+    return 0
+  fi
+  mkdir -p "$state_dir"
+  {
+    printf '# Second-brain checkpoint\n\n'
+    printf -- '- Updated: %s\n- Project: %s\n- Status: in progress\n\n' "$(date '+%Y-%m-%d %H:%M %Z')" "$ROOT_DIR"
+    printf '## User task\n\n%s\n\n' "$(sanitize_summary "$task")"
+    printf '## Decisions and rationale\n\n- <Update as decisions are made.>\n\n'
+    printf '## Completed work and verification\n\n- <Update after meaningful milestones.>\n\n'
+    printf '## Open work and next action\n\n- <Update before compaction or handoff.>\n'
+  } > "$checkpoint"
+}
+
 start_session() {
   local task='interactive agent session'
   local json=false
@@ -334,15 +374,17 @@ start_session() {
   done
   install_hooks
   refresh_local_context
+  refresh_snapshot_checkpoint "$task"
   if ! "$ROOT_DIR/scripts/check-starter.sh" >/dev/null; then
     printf 'automatic start failed: starter contract is unhealthy.\n' >&2
     exit 1
   fi
   if [[ "$json" == true ]]; then
-    printf '{"status":"ready","task":"%s","localContext":".agent-state/session-context.md","hooks":"%s","next":"implement the user task, then run ./scripts/project finish"}\n' "$(json_safe "$task")" "$hooks_status"
+    printf '{"status":"ready","task":"%s","localContext":".agent-state/session-context.md","snapshotCheckpoint":".agent-state/second-brain-checkpoint.md","hooks":"%s","next":"implement the user task, then run ./scripts/project finish"}\n' "$(json_safe "$task")" "$hooks_status"
   else
     printf 'automatic session ready.\n'
     printf 'Local context: .agent-state/session-context.md\nHooks: %s\n' "$hooks_status"
+    printf 'Snapshot checkpoint: .agent-state/second-brain-checkpoint.md\n'
     printf 'Task: %s\n' "$(sanitize_summary "$task")"
     printf 'Next: implement the request; finish with ./scripts/project finish --summary "..."\n'
   fi
@@ -362,23 +404,75 @@ finish_session() {
   done
   local starter_status=pass
   local release_status=pass
+  local archive_status=disabled
   "$ROOT_DIR/scripts/check-starter.sh" >/dev/null || starter_status=fail
   local snapshot
   snapshot="$(automatic_snapshot "$title" "$summary")"
   automatic_handoff "$title" "$summary" "$snapshot"
+  if [[ -n "${PROJECT_SNAPSHOT_ARCHIVE_ROOT:-}" ]]; then
+    if archive_snapshot_optional "$snapshot"; then
+      archive_status=saved
+    else
+      archive_status=warning
+    fi
+  fi
   "$ROOT_DIR/scripts/check-release.sh" >/dev/null || release_status=fail
   if [[ "$starter_status" != pass || "$release_status" != pass ]]; then
     if [[ "$json" == true ]]; then
-      printf '{"status":"fail","starter":"%s","release":"%s","snapshot":"%s","handoff":"docs/state/automatic-handoff.md"}\n' "$starter_status" "$release_status" "${snapshot#$ROOT_DIR/}"
+      printf '{"status":"fail","starter":"%s","release":"%s","snapshot":"%s","handoff":"docs/state/automatic-handoff.md","snapshotArchive":"%s"}\n' "$starter_status" "$release_status" "${snapshot#$ROOT_DIR/}" "$archive_status"
     else
       printf 'automatic finish failed: starter=%s release=%s\n' "$starter_status" "$release_status" >&2
     fi
     return 1
   fi
   if [[ "$json" == true ]]; then
-    printf '{"status":"pass","starter":"pass","release":"pass","snapshot":"%s","handoff":"docs/state/automatic-handoff.md"}\n' "${snapshot#$ROOT_DIR/}"
+    printf '{"status":"pass","starter":"pass","release":"pass","snapshot":"%s","handoff":"docs/state/automatic-handoff.md","snapshotArchive":"%s"}\n' "${snapshot#$ROOT_DIR/}" "$archive_status"
   else
-    printf 'automatic finish passed.\nSnapshot: %s\nHandoff: docs/state/automatic-handoff.md\n' "${snapshot#$ROOT_DIR/}"
+    printf 'automatic finish passed.\nSnapshot: %s\nHandoff: docs/state/automatic-handoff.md\nSecond-brain archive: %s\n' "${snapshot#$ROOT_DIR/}" "$archive_status"
+  fi
+}
+
+archive_snapshot_command() {
+  local summary='' agent="${PROJECT_SNAPSHOT_AGENT:-agent}" title='Project task snapshot' json=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --summary) summary="${2:-}"; shift 2 ;;
+      --agent) agent="${2:-agent}"; shift 2 ;;
+      --title) title="${2:-Project task snapshot}"; shift 2 ;;
+      --json) json=true; shift ;;
+      *) printf 'unknown archive-snapshot option: %s\n' "$1" >&2; exit 2 ;;
+    esac
+  done
+  if [[ -z "${PROJECT_SNAPSHOT_ARCHIVE_ROOT:-}" ]]; then
+    if [[ "$json" == true ]]; then
+      printf '{"status":"disabled","environment":"PROJECT_SNAPSHOT_ARCHIVE_ROOT"}\n'
+    else
+      printf 'second-brain archive is optional and disabled; set PROJECT_SNAPSHOT_ARCHIVE_ROOT to enable it.\n'
+    fi
+    return 0
+  fi
+  local temporary_snapshot="$ROOT_DIR/.agent-state/second-brain-task-snapshot.md"
+  mkdir -p "$ROOT_DIR/.agent-state"
+  {
+    printf '# Project task snapshot: %s\n\n' "$(sanitize_summary "$title")"
+    printf -- '- Created: %s\n- Agent: %s\n- Project: %s\n\n' "$(date '+%Y-%m-%d %H:%M %Z')" "$(sanitize_summary "$agent")" "$ROOT_DIR"
+    printf '## Outcome\n\n%s\n\n' "$(sanitize_summary "$summary")"
+    printf '## Repository state\n\n```text\n'
+    git -C "$ROOT_DIR" status --short --branch 2>/dev/null || true
+    printf '```\n'
+  } > "$temporary_snapshot"
+  if ! python3 "$ROOT_DIR/scripts/archive_snapshot.py" \
+    --archive-root "$PROJECT_SNAPSHOT_ARCHIVE_ROOT" \
+    --project-dir "$ROOT_DIR" \
+    --agent "$agent" \
+    --kind task \
+    --trigger task-finish \
+    --snapshot-file "$temporary_snapshot"; then
+    printf 'warning: task snapshot was not archived; retry when the second brain is available.\n' >&2
+    return 1
+  fi
+  if [[ "$json" == true ]]; then
+    printf '{"status":"saved","archiveRoot":"%s"}\n' "$(json_safe "$PROJECT_SNAPSHOT_ARCHIVE_ROOT")"
   fi
 }
 
@@ -390,6 +484,10 @@ case "${1:-}" in
   finish)
     shift
     finish_session "$@"
+    ;;
+  archive-snapshot)
+    shift
+    archive_snapshot_command "$@"
     ;;
   check)
     if [[ "${2:-}" == "--json" ]]; then

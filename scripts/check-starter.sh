@@ -28,6 +28,7 @@ required_files=(
   "docs/research/README.md"
   "docs/research/backlog.md"
   "docs/research/2026-09-project-operating-system-research.md"
+  "docs/research/2026-10-24-update-project-logic.md"
   "docs/research/2026-09-luna-operating-system-ecosystems.md"
   "docs/research/2026-09-luna-operating-system-governance.md"
   "docs/research/2026-09-luna-operating-system-operations.md"
@@ -115,6 +116,7 @@ required_files=(
   ".github/workflows/security.yml"
   ".github/workflows/upgrade-review.yml"
   "scripts/project"
+  "scripts/snapshot-next-action.sh"
   "scripts/check-starter.sh"
   "scripts/check-secrets.sh"
   "scripts/check-workflows.sh"
@@ -128,6 +130,15 @@ required_files=(
   "scripts/check-specialists.sh"
   "scripts/check-presentation.sh"
   "scripts/check-automation.sh"
+  "scripts/archive_snapshot.py"
+  "scripts/check-snapshot-archive.sh"
+  ".agents/skills/update-project-logic/SKILL.md"
+  ".agents/skills/update-project-logic/references/research-method.md"
+  ".agents/skills/update-project-logic/evals/prompts.csv"
+  ".claude/skills/update-project-logic/SKILL.md"
+  ".claude/skills/update-project-logic/references/research-method.md"
+  ".claude/skills/update-project-logic/evals/prompts.csv"
+  "scripts/check-project-logic-skill.sh"
 )
 
 failures=0
@@ -159,7 +170,7 @@ if grep -RIl --exclude-dir=.git -E 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|AKIA[0-9A
   failures=$((failures + 1))
 fi
 
-for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-automation.sh; do
+for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
   if ! bash "$ROOT_DIR/scripts/$security_check"; then
     failures=$((failures + 1))
   fi

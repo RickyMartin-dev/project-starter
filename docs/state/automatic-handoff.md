@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-09-25 12:18 EDT
-- Snapshot: `docs/compactions/2026-09-25-121801-automatic-session.md`
+- Updated: 2026-10-24 11:11 EDT
+- Snapshot: `docs/compactions/2026-10-24-111111-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Final local hardening passed; automation JSON and secret-redaction boundaries verified
+Implemented and hardened cross-project snapshots and the Codex/Claude project logic refresh skill; local release checks pass.
 
 ## Resume path
 
