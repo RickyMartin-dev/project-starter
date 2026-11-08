@@ -224,7 +224,7 @@ sanitize_summary() {
     -e 's/(xox[baprs]-[A-Za-z0-9-]{20,})/[REDACTED-SLACK-TOKEN]/g' \
     -e 's/(sk-[A-Za-z0-9_-]{20,})/[REDACTED-API-KEY]/g' \
     -e 's/((password|passwd|secret|token|api[_-]?key)[[:space:]]*=[[:space:]]*)[^[:space:]]+/\1[REDACTED]/Ig' \
-    | tr '\r\n\t' '   ' | sed -E 's/[[:space:]]+/ /g'
+    | tr '\r\n\t' '   ' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
 }
 
 json_safe() {

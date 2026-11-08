@@ -2,10 +2,10 @@
 
 ## Status
 
-Active: close the six documented repository gaps, update Project Starter's own project docs, and push the result to `main`.
+Completed: closed the six documented repository gaps, updated Project Starter's own project docs, and pushed the result to `origin/main`.
 
 - Owner: Codex
-- Plan: `docs/plans/active/fix-repo-gaps.md`
+- Plan: `docs/plans/completed/fix-repo-gaps.md`
 - Acceptance: upgrade signals, hook setup, snapshot redaction, presentation routing, and CLI fixtures address the walkthrough findings; self-docs are accurate; full checks pass; snapshot is archived; changes are committed and pushed to `origin/main`.
 
 ## Update protocol

@@ -2,7 +2,7 @@
 
 - Owner: Codex
 - Created: 2026-11-08
-- Status: active
+- Status: completed
 - Scope: Correct the six walkthrough findings, make Project Starter self-documenting, verify the changes, and push them to `origin/main`.
 
 ## Goal
@@ -27,11 +27,13 @@ The upgrade signals, hook setup, snapshot redaction, presentation workflow routi
 - [x] Add the `present` prompt and Claude/Cursor command adapters; validate the surfaces.
 - [x] Fill repository identity, commands, architecture, next-task, and related onboarding/backlog docs.
 - [x] Update the walkthrough report and run the full project release gate.
-- [ ] Archive the final task snapshot, commit, and push to `origin/main`.
+- [x] Commit and push the reviewed changes to `origin/main` (`63f6dec`).
+- [x] Fix trailing whitespace in summaries sanitized by `finish`; protect the generated handoff in the CLI fixture.
+- [x] Run the full gate, finish successfully, archive the final task snapshot, and push the final handoff.
 
 ## Acceptance criteria
 
-- [ ] All six findings are resolved or explicitly clarified; `doctor --json` reports no project placeholders; project and fixture checks pass; final snapshot is archived and the changes reach `origin/main`.
+- [x] All six findings are resolved or explicitly clarified; `doctor --json` reports no project placeholders; project and fixture checks pass; final snapshot is archived and the changes reach `origin/main`.
 
 ## Verification
 
@@ -43,6 +45,8 @@ The upgrade signals, hook setup, snapshot redaction, presentation workflow routi
 ./scripts/project finish --summary "Closed Project Starter walkthrough gaps"
 git diff --check HEAD --
 ```
+
+- Result: `./scripts/project release-check` passed; `doctor --json` reports `placeholderWarnings:false`; `suggest-upgrades --json` reports only the expected proposal and specialist signals; `./scripts/project finish` passed and confirmed the snapshot was archived; implementation commit `63f6dec` is on `origin/main`.
 
 ## Risks and recovery
 

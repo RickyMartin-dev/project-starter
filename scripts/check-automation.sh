@@ -263,6 +263,10 @@ if ! grep -qF '"status":"pass"' <<<"$finish_output" || \
   printf 'CLI finish did not create a passing snapshot and handoff.\n' >&2
   failures=$((failures + 1))
 fi
+if grep -nE '[[:blank:]]+$' "$project_fixture/docs/state/automatic-handoff.md" >/dev/null; then
+  printf 'CLI finish wrote trailing whitespace into the automatic handoff.\n' >&2
+  failures=$((failures + 1))
+fi
 
 if (( failures > 0 )); then
   printf 'automation check failed with %s issue(s).\n' "$failures" >&2
