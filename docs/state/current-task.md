@@ -2,11 +2,11 @@
 
 ## Status
 
-Completed the project operating-system upgrade: compaction-safe memory, research comparison, upgrade suggestions, specialist role cards, and visual presentation.
+Active: close the six documented repository gaps, update Project Starter's own project docs, and push the result to `main`.
 
-- Owner: project-starter maintainer
-- Plan: `docs/plans/completed/hardening-review.md`
-- Acceptance: generated artifacts work, three Luna research reports are recorded, local hardening passes, no authority or network expansion is introduced, and the final commit is pushed. Met after final verification.
+- Owner: Codex
+- Plan: `docs/plans/active/fix-repo-gaps.md`
+- Acceptance: upgrade signals, hook setup, snapshot redaction, presentation routing, and CLI fixtures address the walkthrough findings; self-docs are accurate; full checks pass; snapshot is archived; changes are committed and pushed to `origin/main`.
 
 ## Update protocol
 

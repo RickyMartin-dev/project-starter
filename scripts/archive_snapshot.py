@@ -24,9 +24,12 @@ from typing import Any
 MAX_SNAPSHOT_CHARS = 64_000
 CHECKPOINT_RELATIVE_PATH = pathlib.Path(".agent-state/second-brain-checkpoint.md")
 SECRET_PATTERNS = (
-    (re.compile(r"-----BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----.*?-----END (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----", re.S), "[REDACTED-PRIVATE-KEY]"),
+    (re.compile(r"-----BEGIN (?P<key_type>(?:RSA|OPENSSH|EC|PGP|ENCRYPTED )?PRIVATE KEY)-----.*?-----END (?P=key_type)-----", re.S), "[REDACTED-PRIVATE-KEY]"),
     (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "[REDACTED-AWS-KEY]"),
+    (re.compile(r"\bASIA[0-9A-Z]{16}\b"), "[REDACTED-AWS-SESSION-KEY]"),
     (re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b"), "[REDACTED-GITHUB-TOKEN]"),
+    (re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b"), "[REDACTED-GITHUB-TOKEN]"),
+    (re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"), "[REDACTED-SLACK-TOKEN]"),
     (re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"), "[REDACTED-API-KEY]"),
     (re.compile(r"(?i)\b(password|passwd|secret|token|api[_-]?key)(\s*[=:]\s*)[^\s`]+"), r"\1\2[REDACTED]"),
 )

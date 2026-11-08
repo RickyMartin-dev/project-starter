@@ -29,8 +29,9 @@ cd my-project
 # Agents run this automatically at the start of substantive work.
 ./scripts/project start --task "Build the first version of my project"
 
-# The agent fills project-specific identity and commands while building.
-# Humans only need to review consequential product, security, and authority decisions.
+# Review and tailor the project brief, commands, architecture, and quality gates
+# for the product created from this starter before its first feature ships.
+# Humans remain decision-makers for consequential product and authority choices.
 
 # Confirm the starter is internally consistent.
 ./scripts/project check
@@ -104,15 +105,15 @@ Use [`docs/research/README.md`](docs/research/README.md) to create dated compari
 
 Specialists are portable Markdown role cards under [`agents/`](agents/). The factory prompt can draft a UI, UX, Python, trading, or domain-specific role, but a reviewer must approve scope and evidence before delegation. This keeps “agents that create agents” safe and portable across runtimes rather than hiding a provider-specific supervisor in the starter.
 
-For a visual walkthrough, open [`docs/presentations/README.md`](docs/presentations/README.md) and launch the committed Lavish artifact.
+For a visual walkthrough and the latest gap-resolution report, open [`docs/presentations/README.md`](docs/presentations/README.md) and launch the committed Lavish artifact.
 
 ## First customization pass
 
-1. Replace the placeholders in [`docs/project-brief.md`](docs/project-brief.md).
-2. Add the real stack commands to [`docs/project-commands.md`](docs/project-commands.md).
-3. Describe the actual modules and boundaries in [`docs/architecture.md`](docs/architecture.md).
+1. Tailor [`docs/project-brief.md`](docs/project-brief.md) to the product created from this starter.
+2. Add that product's clean-checkout install, run, test, lint, typecheck, and build commands to [`docs/project-commands.md`](docs/project-commands.md).
+3. Replace the starter control-plane map in [`docs/architecture.md`](docs/architecture.md) with the product's actual modules and boundaries.
 4. Add project-specific rules in the nearest directory instead of expanding the root map indefinitely.
-5. Replace or extend the generic CI check in `.github/workflows/quality.yml` with the project's real build, lint, typecheck, and test commands.
+5. Extend `.github/workflows/quality.yml` with the product's own build and quality commands.
 
 ## Design principles
 

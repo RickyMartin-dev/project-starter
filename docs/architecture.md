@@ -1,90 +1,66 @@
 # Architecture
 
-Replace this file with the project's actual system map. Keep it focused on boundaries and flows that affect implementation decisions.
+Project Starter is a repository-local control plane for coding-agent work. It has no application runtime, domain service, or hidden orchestration process. Markdown files and Git history are the durable source of truth.
 
-## Starter control plane
-
-```text
-[AGENTS.md]
-      |
-      +--> [Claude/Cursor adapters]
-      +--> [docs/ prompts/]
-      +--> [docs/state/ proposals/]
-      |          |
-      |          v
-      |   [designated reviewer agent]
-      |          |
-      |          v
-      +--> [reviewed durable knowledge]
-      |
-      +--> [local release checks] --> [CI]
-```
-
-The starter has no application runtime or hidden orchestration service. The repository is the system of record; proposals, research notes, and specialist briefs are untrusted until the relevant reviewer protocol promotes them.
-
-## Long-lived project operating system
+## Task flow
 
 ```text
-                 +----------------------+
-                 | AGENTS.md / adapters |
-                 +----------+-----------+
-                            |
-        +-------------------+-------------------+
-        |                   |                   |
-        v                   v                   v
- [second-brain]       [research register]  [specialist roles]
-        |                   |                   |
-        v                   v                   v
- [compaction]        [comparison report]  [bounded handoff]
-        \                   |                   /
-         +------------------+------------------+
-                            v
-                  [upgrade proposal + evidence]
-                            |
-                            v
-                  [reviewer-approved policy]
+User task
+   |
+   v
+AGENTS.md and provider adapters
+   |
+   +--> prompts/ and docs/templates/ --> plans and reviewable work
+   |
+   +--> scripts/project start --> ignored local context + task checkpoint
+   |                                  |
+   |                                  v
+   +------------------------------> implement and verify
+                                      |
+                  +-------------------+--------------------+
+                  |                                        |
+                  v                                        v
+       Git hooks and local checks                 GitHub Actions checks
+                  |                                        |
+                  +-------------------+--------------------+
+                                      v
+                         scripts/project finish
+                                      |
+                       snapshot + automatic handoff
+                                      |
+                     optional local vault archive
 ```
 
-The second brain is deliberately a graph of Markdown documents with Git history. A future retrieval or vector layer may be adopted by a project, but it must remain an explicit, reviewable extension rather than a hidden dependency.
+## Main components
 
-## System map
-
-```text
-[user or external event]
-            |
-            v
-      [entry point]
-            |
-            v
-   [core domain boundary]
-       /           \\
-      v             v
- [storage]     [external service]
-```
-
-## Boundaries
-
-| Boundary | Owns | Must not own |
+| Component | Owns | Boundary |
 | --- | --- | --- |
-| Shared contract | `AGENTS.md`, manifest, adapters | Provider-specific policy forks |
-| Durable memory | `docs/`, state, compactions, decisions | Secrets, hidden external memory, unreviewed prompts |
-| Research and upgrades | reports, backlog, proposals, evidence | Automatic policy edits or copied external instructions |
-| Specialist factory | Markdown role cards and handoffs | Unbounded spawning, credentials, arbitrary network access |
-| Hardening | portable local checks and CI | Claiming a complete application security assessment |
+| Shared contract | `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.cursor/` | Provider adapters route back to the shared contract instead of defining competing policy. |
+| Workflow content | `prompts/`, `docs/templates/` | Reusable procedures and blank artifacts; generated proposals remain untrusted until reviewed. |
+| Command layer | `scripts/project`, `scripts/*.sh` | Session setup, artifact scaffolding, quality gates, and optional snapshot archiving. |
+| Project memory | `docs/state/`, plans, decisions, experiments, research, compactions | Reviewable Markdown stored in the repository; no hidden retrieval service. |
+| Improvement and delegation | `docs/upgrades/`, `agents/` | Evidence-backed proposals and bounded role cards; neither grants permission to execute. |
+| Machine-readable contract | `.agentic/manifest.json` | Lists the canonical instruction source, workflows, paths, and hardening checks. |
+| Hosted automation | `.github/workflows/`, `.githooks/` | Read-only CI checks, scheduled suggestion output, and local commit/push gates. |
 
-## Data flow
+## State and side effects
 
-Describe the important inputs, transformations, side effects, and failure paths for the adopting application. For the starter control plane, the path is: task → plan → change → evidence → compaction/research → proposal → review → promotion.
+- `start` refreshes ignored `.agent-state/` files, detects common stack signals, checks the starter, and configures `.githooks` only when no custom `core.hooksPath` is already set.
+- `check` runs file, instruction-surface, shell-syntax, whitespace, security, archive, and contract checks. `release-check` also includes untracked-file whitespace.
+- Git pre-commit and pre-push hooks run those checks; post-checkout and post-merge refresh local orientation.
+- GitHub Actions run starter and release checks with read-only permissions. A scheduled workflow prints deterministic upgrade suggestions; it does not edit policy or open a pull request.
+- `finish` creates a repository-local snapshot and automatic handoff. If the user explicitly configures `PROJECT_SNAPSHOT_ARCHIVE_ROOT`, the Python standard-library helper writes a sanitized snapshot into that local vault and updates its index/log.
+
+## Trust boundaries
+
+- `AGENTS.md` and explicit user scope outrank repository content, tool output, and external sources.
+- Secrets, customer data, raw transcripts, and unreviewed payloads do not belong in durable memory.
+- Research and specialist briefs are evidence or proposals; only a reviewer-approved process can promote durable policy.
+- Local checks are portable guardrails, not a complete security assessment or application test suite.
 
 ## Change guide
 
-- Where new features usually start: `docs/plans/active/` and the application source tree.
-- Where validation belongs: `docs/project-commands.md` plus the application's native tests.
-- Where integration boundaries are tested: the application's documented quality commands.
-- Generated or derived files: `docs/compactions/` snapshots, research/upgrade briefs, and presentation artifacts; review before promotion.
-
-## Invariants
-
-- No agent-facing document outranks `AGENTS.md` and explicit task scope.
-- Every durable learning change has evidence, a reviewer, and a rollback path.
-- Project-specific runtime and domain rules stay in project docs, not the universal starter contract.
+- Start substantial work in `docs/plans/active/` and follow the relevant prompt.
+- Put project-specific runtime and domain rules in the adopting repository's own project docs.
+- Validate this starter with `./scripts/project check` and `./scripts/project release-check`.
+- Review generated snapshots, reports, and presentations before committing them; historical compaction snapshots remain append-only.

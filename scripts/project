@@ -143,13 +143,13 @@ suggest_upgrades() {
   if grep -q 'replace-me' "$ROOT_DIR/docs/project-commands.md" 2>/dev/null; then
     suggestions+=("replace project command placeholders with reproducible checks")
   fi
-  if ! find "$ROOT_DIR/docs/compactions" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
+  if ! has_markdown_record "$ROOT_DIR/docs/compactions"; then
     suggestions+=("create the first compaction snapshot before the next long session")
   fi
-  if ! find "$ROOT_DIR/docs/state/proposals" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
+  if ! has_markdown_record "$ROOT_DIR/docs/state/proposals"; then
     suggestions+=("record one project-local learning proposal after the next verified task")
   fi
-  if ! find "$ROOT_DIR/docs/research" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
+  if ! has_markdown_record "$ROOT_DIR/docs/research"; then
     suggestions+=("run a fresh project research comparison")
   fi
   if ! find "$ROOT_DIR/agents/specialists" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
@@ -173,16 +173,25 @@ suggest_upgrades() {
   fi
 }
 
+has_markdown_record() {
+  local directory="$1"
+  find "$directory" -maxdepth 1 -type f -name '*.md' \
+    ! -name 'README.md' ! -name 'backlog.md' ! -name 'index.md' \
+    -print -quit 2>/dev/null | grep -q .
+}
+
 doctor_json() {
   local status=pass
   local placeholder_warnings=false
+  local remediation='Project documentation is populated; add product-specific quality gates when this starter is adopted.'
   if ! "$ROOT_DIR/scripts/check-starter.sh" >/dev/null; then
     status=fail
   fi
   if grep -q 'replace-me' "$ROOT_DIR/docs/project-brief.md" "$ROOT_DIR/docs/project-commands.md"; then
     placeholder_warnings=true
+    remediation='Replace project placeholders before relying on application-specific quality gates.'
   fi
-  printf '{"schemaVersion":1,"status":"%s","command":"./scripts/project doctor","checks":["starter-contract","local-hardening","memory-research-upgrades","specialist-library","presentation","shell-syntax"],"detectedAdapters":["codex","claude","cursor"],"placeholderWarnings":%s,"remediation":"Replace project placeholders before relying on application-specific quality gates."}\n' "$status" "$placeholder_warnings"
+  printf '{"schemaVersion":1,"status":"%s","command":"./scripts/project doctor","checks":["starter-contract","local-hardening","memory-research-upgrades","specialist-library","presentation","shell-syntax"],"detectedAdapters":["codex","claude","cursor"],"placeholderWarnings":%s,"remediation":"%s"}\n' "$status" "$placeholder_warnings" "$remediation"
   [[ "$status" == pass ]]
 }
 
@@ -191,10 +200,28 @@ local_context="$state_dir/session-context.md"
 hooks_status="available"
 
 sanitize_summary() {
-  printf '%s' "${1:-}" | sed -E \
+  printf '%s' "${1:-}" | awk '
+    BEGIN { in_private_key = 0 }
+    {
+      if (!in_private_key && $0 ~ /-----BEGIN (RSA |OPENSSH |EC |PGP |ENCRYPTED )?PRIVATE KEY-----/) {
+        print "[REDACTED-PRIVATE-KEY]"
+        in_private_key = 1
+        if ($0 ~ /-----END (RSA |OPENSSH |EC |PGP |ENCRYPTED )?PRIVATE KEY-----/) in_private_key = 0
+        next
+      }
+      if (in_private_key) {
+        if ($0 ~ /-----END (RSA |OPENSSH |EC |PGP |ENCRYPTED )?PRIVATE KEY-----/) in_private_key = 0
+        next
+      }
+      print
+    }
+  ' | sed -E \
     -e 's/(BEGIN (RSA|OPENSSH|EC|PGP) PRIVATE KEY)[^-]*/\1 [REDACTED]/g' \
     -e 's/(AKIA[0-9A-Z]{16})/[REDACTED-AWS-KEY]/g' \
+    -e 's/(ASIA[0-9A-Z]{16})/[REDACTED-AWS-SESSION-KEY]/g' \
     -e 's/(gh[pousr]_[A-Za-z0-9_]{20,})/[REDACTED-GITHUB-TOKEN]/g' \
+    -e 's/(github_pat_[A-Za-z0-9_]{20,})/[REDACTED-GITHUB-TOKEN]/g' \
+    -e 's/(xox[baprs]-[A-Za-z0-9-]{20,})/[REDACTED-SLACK-TOKEN]/g' \
     -e 's/(sk-[A-Za-z0-9_-]{20,})/[REDACTED-API-KEY]/g' \
     -e 's/((password|passwd|secret|token|api[_-]?key)[[:space:]]*=[[:space:]]*)[^[:space:]]+/\1[REDACTED]/Ig' \
     | tr '\r\n\t' '   ' | sed -E 's/[[:space:]]+/ /g'
@@ -266,8 +293,15 @@ refresh_local_context() {
 }
 
 install_hooks() {
-  if [[ -d "$ROOT_DIR/.git" && -d "$ROOT_DIR/.githooks" ]]; then
-    if git -C "$ROOT_DIR" config core.hooksPath .githooks 2>/dev/null; then
+  if [[ -d "$ROOT_DIR/.githooks" ]] && git -C "$ROOT_DIR" rev-parse --show-toplevel >/dev/null 2>&1; then
+    local configured_hooks_path
+    if configured_hooks_path="$(git -C "$ROOT_DIR" config --get core.hooksPath 2>/dev/null)"; then
+      if [[ "$configured_hooks_path" == '.githooks' ]]; then
+        hooks_status="installed"
+      else
+        hooks_status="custom-hooks-configured"
+      fi
+    elif git -C "$ROOT_DIR" config core.hooksPath .githooks 2>/dev/null; then
       hooks_status="installed"
     else
       hooks_status="available-but-not-installed"

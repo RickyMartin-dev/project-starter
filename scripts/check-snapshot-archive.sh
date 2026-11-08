@@ -73,12 +73,32 @@ snapshot_count="$(find "$vault/raw/project-snapshots" -type f -name '*.md' | wc 
 [[ "$snapshot_count" == 3 ]] || { printf 'A later Claude compaction was not archived separately.\n' >&2; exit 1; }
 
 aws_key="AKIA"'1234567890ABCDEF'
-python3 "$helper" --archive-root "$vault" --project-dir "$project" --agent codex --kind task --summary "Completed safely with $aws_key" >/dev/null
-if grep -R -qF "$aws_key" "$vault/raw/project-snapshots"; then
-  printf 'snapshot secret redaction failed.\n' >&2
-  exit 1
-fi
+aws_session_key="ASIA"'1234567890ABCDEF'
+github_pat='github_pat_'"01234567890123456789"
+slack_token='xoxb-'"12345678901234567890"
+api_key='sk-'"proj-abcdefghijklmnopqrstuvwxyz1234"
+private_key_kind='PRIVATE KEY'
+encrypted_key_kind='ENCRYPTED PRIVATE KEY'
+private_key_body='PRIVATE_KEY_BODY_SHOULD_NOT_SURVIVE'
+encrypted_key_body='ENCRYPTED_KEY_BODY_SHOULD_NOT_SURVIVE'
+secret_bundle="AWS $aws_key $aws_session_key GitHub $github_pat Slack $slack_token API $api_key
+-----BEGIN $private_key_kind-----
+$private_key_body
+-----END $private_key_kind-----
+-----BEGIN $encrypted_key_kind-----
+$encrypted_key_body
+-----END $encrypted_key_kind-----"
+python3 "$helper" --archive-root "$vault" --project-dir "$project" --agent codex --kind task --summary "$secret_bundle" >/dev/null
+for secret in "$aws_key" "$aws_session_key" "$github_pat" "$slack_token" "$api_key" "$private_key_body" "$encrypted_key_body"; do
+  if grep -R -qF "$secret" "$vault/raw/project-snapshots"; then
+    printf 'snapshot secret redaction failed for a supported credential pattern.\n' >&2
+    exit 1
+  fi
+done
 grep -R -qF '[REDACTED-AWS-KEY]' "$vault/raw/project-snapshots"
+grep -R -qF '[REDACTED-AWS-SESSION-KEY]' "$vault/raw/project-snapshots"
+grep -R -qF '[REDACTED-SLACK-TOKEN]' "$vault/raw/project-snapshots"
+grep -R -qF '[REDACTED-PRIVATE-KEY]' "$vault/raw/project-snapshots"
 
 broken_archive="$TEMP_DIR/not-a-vault"
 printf 'file blocks vault directory creation\n' > "$broken_archive"

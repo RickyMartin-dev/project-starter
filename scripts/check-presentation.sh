@@ -5,14 +5,30 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 artifact=.lavish/project-starter-operating-system.html
+walkthrough=.lavish/repo-walkthrough.html
 failures=0
 if [[ ! -f "$artifact" ]]; then
   printf 'presentation check missing: %s\n' "$artifact" >&2
   failures=$((failures + 1))
 else
-  for phrase in 'Project Starter Operating System' 'aria-labelledby' 'Compaction' 'Specialists' 'Research'; do
+  for phrase in 'Project Starter Operating System' 'aria-labelledby' 'Compaction' 'Specialists' 'Research' 'missing project records'; do
     if ! grep -qF "$phrase" "$artifact"; then
       printf 'presentation missing concept: %s\n' "$phrase" >&2
+      failures=$((failures + 1))
+    fi
+  done
+  if grep -qiE 'stale compactions|unreviewed proposals' "$artifact"; then
+    printf 'presentation claims upgrade suggestions detect freshness or proposal review state.\n' >&2
+    failures=$((failures + 1))
+  fi
+fi
+if [[ ! -f "$walkthrough" ]]; then
+  printf 'walkthrough report missing: %s\n' "$walkthrough" >&2
+  failures=$((failures + 1))
+else
+  for phrase in 'End-to-End Walkthrough' 'The six findings and how they were closed' 'placeholderWarnings: false'; do
+    if ! grep -qF "$phrase" "$walkthrough"; then
+      printf 'walkthrough report missing concept: %s\n' "$phrase" >&2
       failures=$((failures + 1))
     fi
   done
