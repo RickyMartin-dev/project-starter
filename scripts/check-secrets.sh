@@ -6,12 +6,12 @@ cd "$ROOT_DIR"
 
 failures=0
 
-if find . -type f ! -path './.git/*' ! -path './scripts/check-secrets.sh' \( \
+if find . -type f ! -path './.git/*' ! -path './scripts/check-secrets.sh' ! -path './.agentic/secret-scan-ignore' \( \
   -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o \
   -iname '*credentials*' -o -iname '*secret*' \
 \) -print -quit | grep -q .; then
   printf 'sensitive-looking file found; remove it or add a reviewed safe example: ' >&2
-  find . -type f ! -path './.git/*' ! -path './scripts/check-secrets.sh' \( \
+  find . -type f ! -path './.git/*' ! -path './scripts/check-secrets.sh' ! -path './.agentic/secret-scan-ignore' \( \
     -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o \
     -iname '*credentials*' -o -iname '*secret*' \
   \) -print >&2
@@ -29,14 +29,48 @@ credential_patterns=(
   'sk-proj-[A-Za-z0-9_-]{20,}'
 )
 
+# Reviewed allowlist of gitignored paths (downloaded binaries) that are skipped.
+# A listed path is skipped only when git confirms it is ignored and untracked.
+allowlist_file=".agentic/secret-scan-ignore"
+allowlist_globs=()
+if [[ -f "$allowlist_file" ]]; then
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%%#*}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -n "$line" ]] && allowlist_globs+=("$line")
+  done < "$allowlist_file"
+fi
+
+is_allowlisted() {
+  local candidate="$1" glob
+  if (( ${#allowlist_globs[@]} == 0 )); then
+    return 1
+  fi
+  for glob in "${allowlist_globs[@]}"; do
+    # shellcheck disable=SC2053
+    if [[ "$candidate" == $glob ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 scan_files=()
 if [[ -d .git ]]; then
   while IFS= read -r -d '' file; do
     case "$file" in
-      .agents/skills/impeccable/scripts/bin/*|.claude/skills/impeccable/scripts/bin/*|.cursor/skills/impeccable/scripts/bin/*|scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
+      scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
         continue
         ;;
       *)
+        if is_allowlisted "$file"; then
+          if git check-ignore -q -- "$file"; then
+            continue
+          fi
+          printf 'secret scan allowlist violation: %s matches %s but is tracked or not gitignored; allowlisted paths must be gitignored.\n' "$file" "$allowlist_file" >&2
+          failures=$((failures + 1))
+        fi
         scan_files+=("$file")
         ;;
     esac
@@ -49,7 +83,7 @@ else
   while IFS= read -r -d '' file; do
     relative_file="${file#./}"
     case "$relative_file" in
-      .agents/skills/impeccable/scripts/bin/*|.claude/skills/impeccable/scripts/bin/*|.cursor/skills/impeccable/scripts/bin/*|scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
+      scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
         continue
         ;;
       *)

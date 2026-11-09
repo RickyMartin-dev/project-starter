@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-11-08 18:57 EST
-- Snapshot: `docs/compactions/2026-11-08-185756-automatic-session.md`
+- Updated: 2026-11-08 19:18 EST
+- Snapshot: `docs/compactions/2026-11-08-191812-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Adopted Impeccable design skill for Claude, Codex, Cursor; added PRODUCT.md, DESIGN.md, design check, shared Lavish theme; rebuilt operating-system report as plain-language system design page
+Added learning loop: friction log, learn command, lessons gate, evidence-ranked suggest-upgrades, monthly retro with Lavish page; turned 2026-11-08 lessons into checks; migrated walkthrough to theme
 
 ## Resume path
 

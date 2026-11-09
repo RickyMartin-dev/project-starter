@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retrospective 2026-11</title>
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body class="lv-page">
+  <header class="lv-nav">
+    <div class="lv-wrap lv-nav-inner">
+      <span class="lv-brand">Retrospective 2026-11</span>
+      <nav class="lv-links" aria-label="Sections"><a href="#numbers">Numbers</a><a href="#repeated">Repeated</a><a href="#learned">Learned</a><a href="#retire">Retire</a><a href="#next">Next</a></nav>
+      <div class="lv-theme" role="group" aria-label="Appearance">
+        <button type="button" data-lavish-action data-theme-choice="auto">Auto</button>
+        <button type="button" data-lavish-action data-theme-choice="light">Light</button>
+        <button type="button" data-lavish-action data-theme-choice="dark">Dark</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="lv-wrap">
+    <section class="lv-hero lv-hero-solo" aria-labelledby="hero-title">
+      <div>
+        <h1 class="lv-title" id="hero-title">What happened in 2026-11.</h1>
+        <p class="lv-lede">A short look back at the month: what went wrong more than once, what we learned, and what to do next. It is generated from the project records.</p>
+      </div>
+    </section>
+
+    <section class="lv-section" id="numbers" aria-labelledby="numbers-heading">
+      <h2 class="lv-h2" id="numbers-heading">The numbers</h2>
+      <p class="lv-intro">Counts for 2026-11, taken from snapshots, the friction log, lessons, proposals, and the verification log.</p>
+      <div class="lv-table-wrap">
+        <table class="lv-table">
+          <thead><tr><th>Measure</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>Snapshots saved</td><td>4</td></tr>
+            <tr><td>Friction entries added</td><td>5 (open 0, fixed 0, lesson 5)</td></tr>
+            <tr><td>Recurring friction areas</td><td>0</td></tr>
+            <tr><td>Lessons added</td><td>5</td></tr>
+            <tr><td>Lessons in total</td><td>5 (5 with a check)</td></tr>
+            <tr><td>Proposals by status</td><td>none</td></tr>
+            <tr><td>Verification log rows</td><td>1 (0 FAIL)</td></tr>
+            <tr><td>Research notes added</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="lv-section" id="repeated" aria-labelledby="repeated-heading">
+      <h2 class="lv-h2" id="repeated-heading">What repeated</h2>
+      <p class="lv-intro">Problems that showed up two or more times. Repeats are the best candidates for a fix or a new check.</p>
+      <p>Nothing to show for this period.</p>
+    </section>
+
+    <section class="lv-section" id="learned" aria-labelledby="learned-heading">
+      <h2 class="lv-h2" id="learned-heading">What we learned</h2>
+      <p class="lv-intro">Lessons written down this month.</p>
+      <div class="lv-cols">
+        <div><h3>2026-11-08</h3><p>Skip third-party binaries in the secret scan only through the reviewed allowlist, and only when Git ignores them. engine binary false positive, docs/state/friction.md. check: scripts/check-secrets.sh + scripts/check-hardening-fixtures.sh (allowlist cases)</p></div>
+        <div><h3>2026-11-08</h3><p>Validator errors must name the offending key and the fix, not just &quot;invalid&quot;. nested designSkill rejected without explanation. check: scripts/check-manifest.sh + scripts/check-hardening-fixtures.sh (nested object case)</p></div>
+        <div><h3>2026-11-08</h3><p>Hooks that run after checkout or merge are advisory; only pre-commit and pre-push may block. post-checkout failed on an older commit. check: scripts/check-hardening-fixtures.sh (hook stub case)</p></div>
+      </div>
+      <div class="lv-cols">
+        <div><h3>2026-11-08</h3><p>Every Lavish page uses theme.css/theme.js and marks real buttons with data-lavish-action; never ship decorative fake controls. clicks opened annotation instead of acting. check: scripts/check-design.sh</p></div>
+        <div><h3>2026-11-08</h3><p>When a user-level write gate blocks a new file, state the caller, purpose, and instruction once, then retry; do not work around it. GateGuard blocked six first writes. check: none: hook lives in user config outside this repository</p></div>
+      </div>
+    </section>
+
+    <section class="lv-section" id="retire" aria-labelledby="retire-heading">
+      <h2 class="lv-h2" id="retire-heading">Worth a second look</h2>
+      <p class="lv-intro">Lessons older than 90 days may be out of date. A person decides; nothing is deleted.</p>
+      <p>Nothing to show for this period.</p>
+      <p class="lv-note"><strong>Snapshot rollup:</strong> 7 automatic-session snapshots are older than this month. They could be summarized later; none were moved or deleted.</p>
+    </section>
+
+    <section class="lv-section" id="next" aria-labelledby="next-heading">
+      <h2 class="lv-h2" id="next-heading">Next month</h2>
+      <p class="lv-intro">The top suggestions from the upgrade check, in priority order.</p>
+      <div class="lv-cols">
+        <div><h3>Step 1</h3><p>record one project-local learning proposal after the next verified task</p></div>
+        <div><h3>Step 2</h3><p>create and review the first project-specific specialist brief</p></div>
+      </div>
+    </section>
+
+    <footer class="lv-footer"><p>Source of truth: <code>docs/retrospectives/2026-11.md</code>. Regenerate with <code>./scripts/project retro 2026-11 --force</code>.</p></footer>
+  </main>
+  <script src="theme.js"></script>
+</body>
+</html>

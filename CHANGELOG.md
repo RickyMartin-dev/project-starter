@@ -4,6 +4,9 @@ All notable changes to this starter are recorded here.
 
 ## 2026-11-08
 
+- Added a learning loop: `docs/state/friction.md` with `project friction` and `finish --friction`; `project learn` drafts proposals for repeated problems; a gate requires real lessons once snapshots accumulate; lessons carry an enforcing check.
+- `suggest-upgrades` now ranks evidence (recurring friction, failing checks, unchecked lessons, waiting proposals, stale research); `project retro` writes a monthly retrospective and Lavish page.
+- Turned the day's lessons into checks: reviewed secret-scan allowlist (`.agentic/secret-scan-ignore`), key-specific manifest errors, advisory post-checkout/post-merge hooks, and a Lavish theme check. Migrated `repo-walkthrough.html` to the shared theme.
 - Adopted the Impeccable design skill for Claude Code, Codex, and Cursor, with design hooks, review subagents, `PRODUCT.md`, `DESIGN.md`, and `scripts/check-design.sh`. Engine binaries stay gitignored. Decision: `docs/decisions/2026-11-08-impeccable-design-skill.md`.
 - Added the shared Lavish theme (`.lavish/theme.css`, `.lavish/theme.js`) and a light/dark sign-off preview.
 

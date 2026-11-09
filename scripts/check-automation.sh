@@ -268,6 +268,113 @@ if grep -nE '[[:blank:]]+$' "$project_fixture/docs/state/automatic-handoff.md" >
   failures=$((failures + 1))
 fi
 
+# Friction log, finish --friction, learn, and the lessons gate.
+friction_fixture="$fixture_dir/friction-project"
+mkdir -p "$friction_fixture/docs/state/proposals" "$friction_fixture/docs/compactions" "$friction_fixture/prompts"
+mkdir -p "$friction_fixture/scripts"
+cp -p scripts/project scripts/snapshot-next-action.sh scripts/check-learning.sh "$friction_fixture/scripts/"
+for stub in check-starter.sh check-release.sh; do
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$friction_fixture/scripts/$stub"
+  chmod +x "$friction_fixture/scripts/$stub"
+done
+cp docs/state/proposals/README.md "$friction_fixture/docs/state/proposals/README.md"
+cp prompts/promote.md "$friction_fixture/prompts/promote.md"
+printf '# Lessons\n\n## Log\n\n- `YYYY-MM-DD — replace this example with the first durable lesson — x`\n' > "$friction_fixture/docs/lessons.md"
+friction_project() {
+  (cd "$friction_fixture" && GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" ./scripts/project "$@")
+}
+friction_pattern='^- [0-9]{4}-[0-9]{2}-[0-9]{2} \| [a-z0-9][a-z0-9-]* \| [^|]+ \| [^|]+ \| [^|]+ \| (open|fixed|lesson)$'
+friction_project friction 'Alpha Area' 'sym | with pipe' 'cause' 'fix' >/dev/null
+last_friction="$(tail -n 1 "$friction_fixture/docs/state/friction.md")"
+if [[ ! "$last_friction" =~ $friction_pattern ]] || [[ "$last_friction" == *'sym |'* ]] || [[ "$last_friction" != *'| alpha-area |'* ]]; then
+  printf 'CLI friction did not append a valid, pipe-stripped line.\n' >&2
+  failures=$((failures + 1))
+fi
+if friction_project friction 'a' 's' 'c' 'f' --status bogus >/dev/null 2>&1; then
+  printf 'CLI friction accepted an invalid status.\n' >&2
+  failures=$((failures + 1))
+fi
+finish_friction_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'friction fixture' --friction 'beta-area|symptom|cause|fix')"
+if ! grep -qF '| beta-area | symptom | cause | fix | open' "$friction_fixture/docs/state/friction.md" || \
+   ! grep -qF 'Friction entries added: 1' <<<"$finish_friction_output"; then
+  printf 'CLI finish --friction did not append an entry.\n' >&2
+  failures=$((failures + 1))
+fi
+friction_project friction 'alpha-area' 'second symptom' 'cause' 'fix' >/dev/null
+learn_output="$(friction_project learn --json)"
+if ! ls "$friction_fixture"/docs/state/proposals/*-alpha-area.md >/dev/null 2>&1 || \
+   ls "$friction_fixture"/docs/state/proposals/*-beta-area.md >/dev/null 2>&1 || \
+   ! grep -qF '"area":"beta-area","count":1,"state":"watching"' <<<"$learn_output"; then
+  printf 'CLI learn did not draft exactly the proposals for repeated areas.\n' >&2
+  failures=$((failures + 1))
+fi
+alpha_proposal="$(ls "$friction_fixture"/docs/state/proposals/*-alpha-area.md 2>/dev/null | head -n 1)"
+if [[ -z "$alpha_proposal" ]] || ! grep -qF 'Status: proposed' "$alpha_proposal" || ! grep -qF '## Proposed check' "$alpha_proposal"; then
+  printf 'CLI learn proposal is missing required content.\n' >&2
+  failures=$((failures + 1))
+fi
+if ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); then
+  printf 'learning gate failed with no snapshots in the fixture.\n' >&2
+  failures=$((failures + 1))
+fi
+for index in 1 2 3 4 5 6; do
+  printf '# Snapshot %s\n' "$index" > "$friction_fixture/docs/compactions/2026-01-0$index-snapshot.md"
+done
+if (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); then
+  printf 'learning gate passed with more than 5 snapshots and no lessons.\n' >&2
+  failures=$((failures + 1))
+fi
+printf -- '- `2026-11-08 — a real lesson — evidence — check: none: fixture`\n' >> "$friction_fixture/docs/lessons.md"
+if ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); then
+  printf 'learning gate failed even though a dated lesson exists.\n' >&2
+  failures=$((failures + 1))
+fi
+
+# Evidence-based suggest-upgrades and retro
+evidence_fixture="$fixture_dir/evidence-project"
+mkdir -p "$evidence_fixture/docs/state/proposals" "$evidence_fixture/docs/compactions" "$evidence_fixture/docs/research" "$evidence_fixture/docs/retrospectives" "$evidence_fixture/.lavish" "$evidence_fixture/scripts"
+cp -p scripts/project scripts/snapshot-next-action.sh "$evidence_fixture/scripts/"
+printf '# Friction log\n\n## Log\n\n- 2026-11-01 | flaky-hook | s1 | c | f | open\n- 2026-11-02 | flaky-hook | s2 | c | f | open\n- 2026-11-03 | solo-area | s3 | c | f | open\n' > "$evidence_fixture/docs/state/friction.md"
+printf '# Lessons\n\n## Log\n\n- `2026-11-01 — has check — e — check: scripts/x.sh`\n- `2026-11-02 — no check — e`\n' > "$evidence_fixture/docs/lessons.md"
+printf '# Old research\n' > "$evidence_fixture/docs/research/2020-01-01-old.md"
+evidence_out="$(cd "$evidence_fixture" && ./scripts/project suggest-upgrades)"
+if ! grep -qF 'address recurring flaky-hook friction (2 entries; docs/state/friction.md)' <<<"$evidence_out" || \
+   ! grep -qF '1 open friction entries' <<<"$evidence_out" || \
+   ! grep -qF 'add enforcing checks for 1 lessons' <<<"$evidence_out"; then
+  printf 'suggest-upgrades did not report friction or lesson evidence.\n' >&2
+  failures=$((failures + 1))
+fi
+if ! grep -qE 'refresh research \(newest note 2020-01-01, [0-9]+ days old\)' <<<"$evidence_out"; then
+  printf 'suggest-upgrades did not report stale research.\n' >&2
+  failures=$((failures + 1))
+fi
+if command -v python3 >/dev/null 2>&1; then
+  if ! (cd "$evidence_fixture" && ./scripts/project suggest-upgrades --json) | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["signals"] and d["suggestions"] and d["count"]==len(d["suggestions"])'; then
+    printf 'suggest-upgrades --json is not valid JSON with signals.\n' >&2
+    failures=$((failures + 1))
+  fi
+fi
+if ! (cd "$evidence_fixture" && ./scripts/project retro 2026-11 --html >/dev/null) || \
+   ! grep -qF '## Metrics' "$evidence_fixture/docs/retrospectives/2026-11.md" || \
+   ! grep -qF 'flaky-hook' "$evidence_fixture/docs/retrospectives/2026-11.md"; then
+  printf 'retro did not write the markdown retrospective.\n' >&2
+  failures=$((failures + 1))
+fi
+if (cd "$evidence_fixture" && ./scripts/project retro 2026-11 >/dev/null 2>&1); then
+  printf 'retro overwrote an existing retrospective without --force.\n' >&2
+  failures=$((failures + 1))
+fi
+if ! (cd "$evidence_fixture" && ./scripts/project retro 2026-11 --force >/dev/null 2>&1); then
+  printf 'retro --force failed.\n' >&2
+  failures=$((failures + 1))
+fi
+retro_html="$evidence_fixture/.lavish/retro-2026-11.html"
+if [[ ! -f "$retro_html" ]] || ! grep -qF 'theme.css' "$retro_html" || ! grep -qF 'theme.js' "$retro_html" || \
+   ! grep -qF 'data-lavish-action' "$retro_html" || grep -qF '<style' "$retro_html"; then
+  printf 'retro --html output does not follow the shared Lavish theme.\n' >&2
+  failures=$((failures + 1))
+fi
+
 if (( failures > 0 )); then
   printf 'automation check failed with %s issue(s).\n' "$failures" >&2
   exit 1

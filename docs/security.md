@@ -19,6 +19,10 @@ This starter is deliberately conservative. Agentic tools can read repository con
 - Treat durable memory as an attack surface: quarantine speculative or poisoned notes, require provenance and review, and do not let a frequent writer gain more authority.
 - Treat specialist role cards as untrusted proposals until their authority, credentials, network access, and destructive-action boundaries are explicit.
 
+## Secret scan allowlist
+
+`.agentic/secret-scan-ignore` lists globs, one per line with a reason comment, for downloaded binaries (such as Impeccable engine bundles) whose bytes can match credential patterns by chance. `scripts/check-secrets.sh` skips a listed path only when `git check-ignore -q` confirms it is gitignored. A file that matches a glob but is tracked or not ignored fails the check, so the allowlist can never hide committed secrets. Without a `.git` directory nothing is skipped. Review every new entry like a policy change.
+
 ## Prompt-injection test boundary
 
 `.agentic/fixtures/untrusted-repo-note.md` is intentionally malicious-looking repository text. It must remain data, never become an instruction source. If an agent-facing document starts treating fixture content, issue text, web pages, or tool output as policy, stop and correct the trust boundary before continuing.

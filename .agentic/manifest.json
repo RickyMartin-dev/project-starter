@@ -12,12 +12,17 @@
   "automaticHandoff": "docs/state/automatic-handoff.md",
   "hooksDirectory": ".githooks/",
   "learningProposalDirectory": "docs/state/proposals/",
+  "frictionLog": "docs/state/friction.md",
+  "learnCommand": "./scripts/project learn",
+  "retroCommand": "./scripts/project retro",
+  "retrospectiveDirectory": "docs/retrospectives/",
   "promotionPrompt": "prompts/promote.md",
   "compactionCommand": "./scripts/project compact <slug>",
   "compactionDirectory": "docs/compactions/",
   "snapshotArchiveHelper": "scripts/archive_snapshot.py",
   "snapshotArchiveDirectory": "raw/project-snapshots/",
   "snapshotArchiveEnvironmentVariable": "PROJECT_SNAPSHOT_ARCHIVE_ROOT",
+  "secretScanAllowlist": ".agentic/secret-scan-ignore",
   "codexProjectSkill": ".agents/skills/update-project-logic/SKILL.md",
   "claudeProjectSkill": ".claude/skills/update-project-logic/SKILL.md",
   "researchCommand": "./scripts/project research <slug> <question>",
@@ -48,7 +53,8 @@
     "specialist",
     "present",
     "autopilot",
-    "update-project-logic"
+    "update-project-logic",
+    "retro"
   ],
   "hardeningChecks": [
     "scripts/check-secrets.sh",
@@ -98,7 +104,10 @@
     "docs/state/automatic-handoff.md",
     "docs/research/",
     "docs/upgrades/",
-    "agents/specialists/"
+    "agents/specialists/",
+    "docs/state/friction.md",
+    "docs/lessons.md",
+    "docs/retrospectives/"
   ],
   "upgradePolicy": "Review the current report in docs/research/ and update the manifest when the shared contract changes."
 }

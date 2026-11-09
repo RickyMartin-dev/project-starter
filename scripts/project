@@ -7,7 +7,7 @@ usage() {
   cat <<'EOF'
 Usage:
   ./scripts/project start [--task "request"] [--json]
-  ./scripts/project finish [--summary "outcome"] [--json]
+  ./scripts/project finish [--summary "outcome"] [--json] [--friction "area|symptom|cause|fix"]...
   ./scripts/project archive-snapshot --summary "outcome" [--agent codex|claude]
   ./scripts/project check
   ./scripts/project check --json
@@ -21,6 +21,9 @@ Usage:
   ./scripts/project upgrade <slug> [title]
   ./scripts/project specialist <slug> [title]
   ./scripts/project suggest-upgrades [--json]
+  ./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|lesson]
+  ./scripts/project learn [--json]
+  ./scripts/project retro [YYYY-MM] [--html] [--json] [--force]
 
 Commands:
   start    Automatically orient the active agent and refresh local context.
@@ -36,6 +39,9 @@ Commands:
   upgrade  Create a bounded upgrade proposal under docs/upgrades/proposals/.
   specialist Create a reviewed specialist role brief under agents/specialists/.
   suggest-upgrades Print deterministic, evidence-oriented next improvements.
+  friction Append a sanitized entry to docs/state/friction.md.
+  learn    Group friction by area and draft proposals for repeated problems.
+  retro    Write a monthly retrospective under docs/retrospectives/ (--html adds a .lavish page).
 EOF
 }
 
@@ -130,13 +136,151 @@ compact_snapshot() {
   printf 'created %s\n' "$target"
 }
 
+days_from_ymd() {
+  local y=$((10#$1)) m=$((10#$2)) d=$((10#$3))
+  if (( m <= 2 )); then y=$((y - 1)); m=$((m + 9)); else m=$((m - 3)); fi
+  printf '%s' $(( 365 * y + y / 4 - y / 100 + y / 400 + (153 * m + 2) / 5 + d ))
+}
+
+today_days() {
+  local today
+  today="$(date +%F)"
+  days_from_ymd "${today:0:4}" "${today:5:2}" "${today:8:2}"
+}
+
+# Day number for a dated file: filename prefix YYYY-MM-DD (or YYYY-MM), else mtime.
+file_date_days() {
+  local name epoch
+  name="$(basename "$1")"
+  if [[ "$name" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2}) ]]; then
+    days_from_ymd "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
+  elif [[ "$name" =~ ^([0-9]{4})-([0-9]{2})- ]]; then
+    days_from_ymd "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" 1
+  else
+    epoch="$(stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || date +%s)"
+    printf '%s' $(( epoch / 86400 + $(days_from_ymd 1970 1 1) ))
+  fi
+}
+
+json_escape() {
+  printf '%s' "${1:-}" | tr '\r\n\t' '   ' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+
+html_escape() {
+  printf '%s' "${1:-}" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'
+}
+
+count_lines() {
+  if [[ -z "${1:-}" ]]; then printf '0'; else printf '%s\n' "$1" | wc -l | tr -d ' '; fi
+}
+
+# Lessons as "YYYY-MM-DD<TAB>text" lines; the template placeholder is ignored.
+lesson_records() {
+  [[ -f "$ROOT_DIR/docs/lessons.md" ]] || return 0
+  grep -E '^- `?[0-9]{4}-[0-9]{2}-[0-9]{2} ' "$ROOT_DIR/docs/lessons.md" 2>/dev/null \
+    | sed -E 's/^- `?([0-9]{4}-[0-9]{2}-[0-9]{2}) (— )?(.*[^`])`?$/\1\t\3/' || true
+}
+
+SIG_KIND=()
+SIG_DETAIL=()
+SIG_EVIDENCE=()
+add_signal() {
+  SIG_KIND+=("$1")
+  SIG_DETAIL+=("$2")
+  SIG_EVIDENCE+=("$3")
+}
+
+collect_signals() {
+  SIG_KIND=()
+  SIG_DETAIL=()
+  SIG_EVIDENCE=()
+  local today area count opens singles=0 line
+  today="$(today_days)"
+
+  # 1. recurring friction
+  while read -r count opens area; do
+    [[ -n "${area:-}" ]] || continue
+    if (( count >= 2 )); then
+      add_signal friction "address recurring $area friction" "$count entries; docs/state/friction.md"
+    elif (( opens >= 1 )); then
+      singles=$((singles + 1))
+    fi
+  done < <(friction_entries | awk -F' [|] ' '$6 != "lesson" { c[$2]++; if ($6 == "open") o[$2]++ } END { for (a in c) print c[a], o[a] + 0, a }' | sort -k1,1nr -k3,3)
+  if (( singles > 0 )); then
+    add_signal friction-open "resolve $singles open friction entries" "docs/state/friction.md"
+  fi
+
+  # 4. failing checks in the last 30 days
+  local fails=0 row_date row_result age
+  if [[ -f "$ROOT_DIR/docs/verification-log.md" ]]; then
+    while IFS='|' read -r row_date row_result; do
+      row_date="$(printf '%s' "$row_date" | tr -d ' ')"
+      [[ "$row_result" == *FAIL* ]] || continue
+      age=$(( today - $(days_from_ymd "${row_date:0:4}" "${row_date:5:2}" "${row_date:8:2}") ))
+      (( age >= 0 && age <= 30 )) && fails=$((fails + 1))
+    done < <(awk -F'|' '$2 ~ /^ *[0-9]{4}-[0-9]{2}-[0-9]{2} *$/ { print $2 "|" $5 }' "$ROOT_DIR/docs/verification-log.md")
+  fi
+  if (( fails > 0 )); then
+    add_signal failing-checks "investigate $fails failing checks" "FAIL rows in the last 30 days; docs/verification-log.md"
+  fi
+
+  # 5. lessons without enforcing checks
+  local unchecked
+  unchecked="$(lesson_records | grep -vc 'check:' || true)"
+  if (( unchecked > 0 )); then
+    add_signal lessons-without-checks "add enforcing checks for $unchecked lessons" "lessons lacking check:; docs/lessons.md"
+  fi
+
+  # 3. proposals waiting
+  local waiting=0 file
+  for file in "$ROOT_DIR"/docs/state/proposals/*.md; do
+    [[ -f "$file" && "$(basename "$file")" != README.md ]] || continue
+    grep -qE '^Status:[[:space:]]*proposed' "$file" || continue
+    (( today - $(file_date_days "$file") > 14 )) && waiting=$((waiting + 1))
+  done
+  if (( waiting > 0 )); then
+    add_signal waiting-proposals "review $waiting proposals waiting > 14 days" "Status: proposed; docs/state/proposals/"
+  fi
+
+  # 2. stale research
+  local newest=0 newest_file="" days
+  for file in "$ROOT_DIR"/docs/research/*.md; do
+    [[ -f "$file" ]] || continue
+    case "$(basename "$file")" in README.md|backlog.md) continue ;; esac
+    days="$(file_date_days "$file")"
+    if (( days > newest )); then
+      newest="$days"
+      newest_file="$file"
+    fi
+  done
+  if [[ -n "$newest_file" ]] && (( today - newest > 90 )); then
+    local epoch_days newest_date
+    epoch_days=$(( newest - $(days_from_ymd 1970 1 1) ))
+    newest_date="$(date -u -d "@$(( epoch_days * 86400 ))" +%F 2>/dev/null || date -u -r "$(( epoch_days * 86400 ))" +%F)"
+    add_signal stale-research "refresh research" "newest note $newest_date, $(( today - newest )) days old"
+  fi
+}
+
+suggestion_lines() {
+  local i
+  for i in "${!SIG_KIND[@]}"; do
+    printf '%s (%s)\n' "${SIG_DETAIL[$i]}" "${SIG_EVIDENCE[$i]}"
+  done
+}
+
 suggest_upgrades() {
   local json=false
   local argument
   for argument in "$@"; do
     [[ "$argument" == '--json' ]] && json=true
   done
+  collect_signals
   local suggestions=()
+  local line
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && suggestions+=("$line")
+  done < <(suggestion_lines)
+  local signal_count=${#suggestions[@]}
   if grep -q 'replace-me' "$ROOT_DIR/docs/project-brief.md" 2>/dev/null; then
     suggestions+=("customize the project brief before implementation")
   fi
@@ -163,7 +307,12 @@ suggest_upgrades() {
     local i
     for i in "${!suggestions[@]}"; do
       (( i > 0 )) && printf ','
-      printf '"%s"' "${suggestions[$i]}"
+      printf '"%s"' "$(json_escape "${suggestions[$i]}")"
+    done
+    printf '],"signals":['
+    for i in "${!SIG_KIND[@]}"; do
+      (( i > 0 )) && printf ','
+      printf '{"kind":"%s","detail":"%s","evidence":"%s"}' "$(json_escape "${SIG_KIND[$i]}")" "$(json_escape "${SIG_DETAIL[$i]}")" "$(json_escape "${SIG_EVIDENCE[$i]}")"
     done
     printf ']}\n'
   else
@@ -229,6 +378,123 @@ sanitize_summary() {
 
 json_safe() {
   sanitize_summary "${1:-}" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+
+friction_log="$ROOT_DIR/docs/state/friction.md"
+friction_line_pattern='^- [0-9]{4}-[0-9]{2}-[0-9]{2} \| [a-z0-9][a-z0-9-]* \| [^|]+ \| [^|]+ \| [^|]+ \| (open|fixed|lesson)$'
+
+friction_field() {
+  local value
+  value="$(sanitize_summary "${1:-}" | tr -d '|' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')"
+  printf '%s' "${value:-unknown}"
+}
+
+friction_append() {
+  local area symptom cause fix status="${5:-open}"
+  area="$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+  if ! valid_slug "$area"; then
+    printf 'friction area must be a short kebab-case slug.\n' >&2
+    return 2
+  fi
+  case "$status" in
+    open|fixed|lesson) ;;
+    *) printf 'friction status must be open, fixed, or lesson.\n' >&2; return 2 ;;
+  esac
+  symptom="$(friction_field "${2:-}")"
+  cause="$(friction_field "${3:-}")"
+  fix="$(friction_field "${4:-}")"
+  if [[ ! -f "$friction_log" ]]; then
+    mkdir -p "$(dirname "$friction_log")"
+    printf '# Friction log\n\nAppend-only record of session problems and user corrections. Keep entries sanitized.\n\n`- YYYY-MM-DD | <area> | <symptom> | <cause> | <fix> | <status>`\n\n## Log\n\n' > "$friction_log"
+  fi
+  printf -- '- %s | %s | %s | %s | %s | %s\n' "$(date +%F)" "$area" "$symptom" "$cause" "$fix" "$status" >> "$friction_log"
+}
+
+friction_command() {
+  local status=open
+  local -a positional=()
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --status) status="${2:-}"; shift 2 ;;
+      *) positional+=("$1"); shift ;;
+    esac
+  done
+  if [[ ${#positional[@]} -ne 4 ]]; then
+    printf 'usage: ./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|lesson]\n' >&2
+    return 2
+  fi
+  friction_append "${positional[0]}" "${positional[1]}" "${positional[2]}" "${positional[3]}" "$status" || return $?
+  printf 'friction recorded in docs/state/friction.md\n'
+}
+
+friction_entries() {
+  [[ -f "$friction_log" ]] || return 0
+  awk '/^## Log/ { in_log = 1; next } /^## / { in_log = 0 } in_log' "$friction_log" | grep -E "$friction_line_pattern" || true
+}
+
+learn_command() {
+  local json=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --json) json=true; shift ;;
+      *) printf 'unknown learn option: %s\n' "$1" >&2; exit 2 ;;
+    esac
+  done
+  local entries area count total state first=true proposal evidence today
+  entries="$(friction_entries)"
+  today="$(date +%F)"
+  local out=''
+  local drafted=0 watching=0
+  while IFS= read -r area; do
+    [[ -n "$area" ]] || continue
+    count="$(printf '%s\n' "$entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson"' | wc -l | tr -d ' ')"
+    total="$(printf '%s\n' "$entries" | awk -F' [|] ' -v a="$area" '$2 == a' | wc -l | tr -d ' ')"
+    (( count > 0 )) || continue
+    if (( count >= 2 )); then
+      state=exists
+      proposal=''
+      for existing in "$ROOT_DIR"/docs/state/proposals/*-"$area".md; do
+        [[ -f "$existing" ]] && proposal="$existing"
+      done
+      if [[ -z "$proposal" ]]; then
+        proposal="$ROOT_DIR/docs/state/proposals/$today-$area.md"
+        evidence="$(printf '%s\n' "$entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson"')"
+        mkdir -p "$ROOT_DIR/docs/state/proposals"
+        {
+          printf '# Proposal: lesson for %s\n\nStatus: proposed\n\n' "$area"
+          printf '## Problem or observation\n\nThe friction area `%s` was logged %s times without a recorded lesson.\n\n' "$area" "$count"
+          printf '%s\n\n' "$evidence"
+          printf '## Evidence commands\n\n- `grep -F " | %s | " docs/state/friction.md`\n\n' "$area"
+          printf '## Scope\n\nRecord one lesson in `docs/lessons.md` for `%s`, with the smallest change that prevents recurrence.\n\n' "$area"
+          printf '## Expected benefit\n\nThe same problem stops costing time in later sessions.\n\n'
+          printf '## Proposed check\n\nAn approved lesson must ship with an enforcing check (script, hook, or test) or a written reason none is possible.\n\n'
+          printf '## Rollback\n\nRevert the lesson entry and any check added for it.\n\n'
+          printf '## Security and trust review\n\nEvidence is sanitized friction-log text and is treated as untrusted data. No credentials or authority changes are involved.\n\n'
+          printf '## Reviewer decision\n\nPending reviewer-agent decision per `prompts/promote.md`.\n'
+        } > "$proposal"
+        state=drafted
+        drafted=$((drafted + 1))
+      fi
+    else
+      state=watching
+      watching=$((watching + 1))
+    fi
+    if [[ "$json" == true ]]; then
+      [[ "$first" == true ]] || out="$out,"
+      first=false
+      out="$out{\"area\":\"$(json_safe "$area")\",\"count\":$count,\"state\":\"$state\"}"
+    else
+      out="$out$area: $count open entries ($state)"$'\n'
+    fi
+  done <<EOF2
+$(printf '%s\n' "$entries" | awk -F' [|] ' '{ print $2 }' | sort -u)
+EOF2
+  if [[ "$json" == true ]]; then
+    printf '{"areas":[%s],"proposalsDrafted":%s,"watching":%s}\n' "$out" "$drafted" "$watching"
+  else
+    printf 'Friction areas:\n%s' "${out:-none$'\n'}"
+    printf 'proposals drafted: %s; watching: %s\n' "$drafted" "$watching"
+  fi
 }
 
 detect_project_signals() {
@@ -428,17 +694,38 @@ finish_session() {
   local summary='Session completed; inspect the diff and verification evidence.'
   local title='Automatic project session'
   local json=false
+  local friction_flags=''
+  local friction_added=0
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --summary) summary="${2:-}"; shift 2 ;;
       --title) title="${2:-}"; shift 2 ;;
       --json) json=true; shift ;;
+      --friction) friction_flags="$friction_flags${2:-}"$'\n'; shift 2 ;;
       *) printf 'unknown finish option: %s\n' "$1" >&2; exit 2 ;;
     esac
   done
   local starter_status=pass
   local release_status=pass
   local archive_status=disabled
+  local f_area f_symptom f_cause f_fix pending="$ROOT_DIR/.agent-state/friction-pending.md" pending_line
+  while IFS= read -r pending_line; do
+    [[ -n "$pending_line" ]] || continue
+    IFS='|' read -r f_area f_symptom f_cause f_fix <<<"$pending_line"
+    friction_append "$f_area" "$f_symptom" "$f_cause" "$f_fix" open && friction_added=$((friction_added + 1))
+  done <<EOF2
+$friction_flags
+EOF2
+  if [[ -f "$pending" ]]; then
+    while IFS= read -r pending_line; do
+      if [[ "$pending_line" =~ $friction_line_pattern ]]; then
+        sanitize_summary "$pending_line" >> "$friction_log"
+        printf '\n' >> "$friction_log"
+        friction_added=$((friction_added + 1))
+      fi
+    done < "$pending"
+    : > "$pending"
+  fi
   "$ROOT_DIR/scripts/check-starter.sh" >/dev/null || starter_status=fail
   local snapshot
   snapshot="$(automatic_snapshot "$title" "$summary")"
@@ -462,7 +749,7 @@ finish_session() {
   if [[ "$json" == true ]]; then
     printf '{"status":"pass","starter":"pass","release":"pass","snapshot":"%s","handoff":"docs/state/automatic-handoff.md","snapshotArchive":"%s"}\n' "${snapshot#$ROOT_DIR/}" "$archive_status"
   else
-    printf 'automatic finish passed.\nSnapshot: %s\nHandoff: docs/state/automatic-handoff.md\nSecond-brain archive: %s\n' "${snapshot#$ROOT_DIR/}" "$archive_status"
+    printf 'automatic finish passed.\nSnapshot: %s\nHandoff: docs/state/automatic-handoff.md\nSecond-brain archive: %s\nFriction entries added: %s\n' "${snapshot#$ROOT_DIR/}" "$archive_status" "$friction_added"
   fi
 }
 
@@ -507,6 +794,247 @@ archive_snapshot_command() {
   fi
   if [[ "$json" == true ]]; then
     printf '{"status":"saved","archiveRoot":"%s"}\n' "$(json_safe "$PROJECT_SNAPSHOT_ARCHIVE_ROOT")"
+  fi
+}
+
+# Emit grouped lv-cols blocks from "title<TAB>body" lines (three per row).
+retro_html_cols() {
+  local records="$1" line title body n=0
+  if [[ -z "$records" ]]; then
+    printf '      <p>Nothing to show for this period.</p>\n'
+    return 0
+  fi
+  while IFS= read -r line; do
+    title="${line%%$'\t'*}"
+    body="${line#*$'\t'}"
+    # Lesson records separate fields with em dashes; render them as sentences.
+    body="${body// — /. }"
+    (( n % 3 == 0 )) && printf '      <div class="lv-cols">\n'
+    printf '        <div><h3>%s</h3><p>%s</p></div>\n' "$(html_escape "$title")" "$(html_escape "$body")"
+    n=$((n + 1))
+    (( n % 3 == 0 )) && printf '      </div>\n'
+  done <<< "$records"
+  (( n % 3 == 0 )) || printf '      </div>\n'
+}
+
+retro_md_list() {
+  local records="$1" line
+  if [[ -z "$records" ]]; then printf -- '- None.\n'; return 0; fi
+  while IFS= read -r line; do
+    printf -- '- %s: %s\n' "${line%%$'\t'*}" "${line#*$'\t'}"
+  done <<< "$records"
+}
+
+retro_command() {
+  local month="" html=false json=false force=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --html) html=true; shift ;;
+      --json) json=true; shift ;;
+      --force) force=true; shift ;;
+      -*) printf 'unknown retro option: %s\n' "$1" >&2; return 2 ;;
+      *) [[ -z "$month" ]] || { printf 'usage: ./scripts/project retro [YYYY-MM] [--html] [--json] [--force]\n' >&2; return 2; }
+         month="$1"; shift ;;
+    esac
+  done
+  [[ -n "$month" ]] || month="$(date +%Y-%m)"
+  if [[ ! "$month" =~ ^[0-9]{4}-(0[1-9]|1[0-2])$ ]]; then
+    printf 'retro period must look like YYYY-MM.\n' >&2
+    return 2
+  fi
+  local md_target="$ROOT_DIR/docs/retrospectives/$month.md"
+  local html_target="$ROOT_DIR/.lavish/retro-$month.html"
+  if [[ "$force" != true ]]; then
+    if [[ -e "$md_target" ]]; then
+      printf 'retrospective already exists: %s (use --force to overwrite)\n' "$md_target" >&2
+      return 1
+    fi
+    if [[ "$html" == true && -e "$html_target" ]]; then
+      printf 'retrospective page already exists: %s (use --force to overwrite)\n' "$html_target" >&2
+      return 1
+    fi
+  fi
+
+  local today file name current_month
+  today="$(today_days)"
+  current_month="$(date +%Y-%m)"
+
+  # Metrics
+  local snapshots=0 research_added=0 rollup=0
+  for file in "$ROOT_DIR"/docs/compactions/*.md; do
+    [[ -f "$file" ]] || continue
+    name="$(basename "$file")"
+    [[ "$name" == "$month"-* ]] && snapshots=$((snapshots + 1))
+    if [[ "$name" =~ ^([0-9]{4}-[0-9]{2})-.*automatic-session ]] && [[ "${BASH_REMATCH[1]}" < "$current_month" ]]; then
+      rollup=$((rollup + 1))
+    fi
+  done
+  for file in "$ROOT_DIR"/docs/research/*.md; do
+    [[ -f "$file" ]] || continue
+    name="$(basename "$file")"
+    case "$name" in README.md|backlog.md) continue ;; esac
+    [[ "$name" == "$month"* ]] && research_added=$((research_added + 1))
+  done
+
+  local month_entries f_total f_open f_fixed f_lesson
+  month_entries="$(friction_entries | grep -E "^- $month-" || true)"
+  f_total="$(count_lines "$month_entries")"
+  f_open="$(count_lines "$(printf '%s\n' "$month_entries" | grep -E '\| open$' || true)")"
+  f_fixed="$(count_lines "$(printf '%s\n' "$month_entries" | grep -E '\| fixed$' || true)")"
+  f_lesson="$(count_lines "$(printf '%s\n' "$month_entries" | grep -E '\| lesson$' || true)")"
+
+  local repeated="" area count rest
+  while read -r count area; do
+    [[ -n "${area:-}" ]] || continue
+    (( count >= 2 )) || continue
+    rest="$(printf '%s\n' "$month_entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson" { print $3; exit }')"
+    repeated="${repeated}${area}"$'\t'"$count entries, for example: ${rest}"$'\n'
+  done < <(printf '%s\n' "$month_entries" | awk -F' [|] ' '$6 != "lesson" && $2 != "" { c[$2]++ } END { for (a in c) print c[a], a }' | sort -k1,1nr -k2,2)
+  repeated="${repeated%$'\n'}"
+  local repeated_count
+  repeated_count="$(count_lines "$repeated")"
+
+  local lessons_all lessons_month lessons_total lessons_checked lessons_added retire="" lesson_date lesson_text age
+  lessons_all="$(lesson_records)"
+  lessons_total="$(count_lines "$lessons_all")"
+  lessons_checked="$(count_lines "$(printf '%s\n' "$lessons_all" | grep 'check:' || true)")"
+  lessons_month="$(printf '%s\n' "$lessons_all" | grep -E "^$month-" || true)"
+  lessons_added="$(count_lines "$lessons_month")"
+  while IFS=$'\t' read -r lesson_date lesson_text; do
+    [[ -n "${lesson_date:-}" ]] || continue
+    age=$(( today - $(days_from_ymd "${lesson_date:0:4}" "${lesson_date:5:2}" "${lesson_date:8:2}") ))
+    (( age > 90 )) && retire="${retire}${lesson_date}"$'\t'"${lesson_text}"$'\n'
+  done <<< "$lessons_all"
+  retire="${retire%$'\n'}"
+  local retire_count
+  retire_count="$(count_lines "$retire")"
+
+  local prop_summary="" prop_total=0 status n
+  while read -r status n; do
+    [[ -n "${status:-}" ]] || continue
+    prop_summary="${prop_summary}${prop_summary:+, }$status $n"
+    prop_total=$((prop_total + n))
+  done < <(find "$ROOT_DIR/docs/state/proposals" -maxdepth 1 -type f -name '*.md' ! -name README.md -exec awk 'FNR == 1 { seen = 0 } /^Status:/ && !seen { seen = 1; s = tolower($2); c[s]++ } END { for (s in c) print s, c[s] }' {} + 2>/dev/null | awk '{ c[$1] += $2 } END { for (s in c) print s, c[s] }' | sort)
+  [[ -n "$prop_summary" ]] || prop_summary="none"
+
+  local v_rows=0 v_fails=0 row_date row_result
+  if [[ -f "$ROOT_DIR/docs/verification-log.md" ]]; then
+    while IFS='|' read -r row_date row_result; do
+      row_date="$(printf '%s' "$row_date" | tr -d ' ')"
+      [[ "$row_date" == "$month"-* ]] || continue
+      v_rows=$((v_rows + 1))
+      [[ "$row_result" == *FAIL* ]] && v_fails=$((v_fails + 1))
+    done < <(awk -F'|' '$2 ~ /^ *[0-9]{4}-[0-9]{2}-[0-9]{2} *$/ { print $2 "|" $5 }' "$ROOT_DIR/docs/verification-log.md")
+  fi
+
+  local learned_records="" learned_count
+  learned_records="$lessons_month"
+  learned_count="$lessons_added"
+
+  collect_signals
+  local next="" i n_next=0 line
+  while IFS= read -r line; do
+    [[ -n "$line" ]] || continue
+    (( n_next < 3 )) || break
+    n_next=$((n_next + 1))
+    next="${next}Step $n_next"$'\t'"$line"$'\n'
+  done < <(suggestion_lines)
+  if (( n_next < 3 )); then
+    # Fill from the presence-based suggestions
+    while IFS= read -r line; do
+      [[ -n "$line" ]] || continue
+      (( n_next < 3 )) || break
+      n_next=$((n_next + 1))
+      next="${next}Step $n_next"$'\t'"$line"$'\n'
+    done < <(suggest_upgrades | sed -n '/^- /s/^- //p' | grep -vxF -f <(suggestion_lines) || true)
+  fi
+  next="${next%$'\n'}"
+  [[ -n "$next" ]] || next="Step 1"$'\t'"No suggestions fired; pick the smallest measurable upgrade."
+
+  mkdir -p "$ROOT_DIR/docs/retrospectives"
+  {
+    printf '# Retrospective: %s\n\n' "$month"
+    printf -- '- Period: %s\n' "$month"
+    printf -- '- Generated: %s by `./scripts/project retro`\n\n' "$(date +%F)"
+    printf '## Metrics\n\n| Measure | Value |\n| --- | --- |\n'
+    printf '| Snapshots saved | %s |\n' "$snapshots"
+    printf '| Friction entries added | %s (open %s, fixed %s, lesson %s) |\n' "$f_total" "$f_open" "$f_fixed" "$f_lesson"
+    printf '| Recurring friction areas | %s |\n' "$repeated_count"
+    printf '| Lessons added | %s |\n' "$lessons_added"
+    printf '| Lessons in total | %s (%s with a check) |\n' "$lessons_total" "$lessons_checked"
+    printf '| Proposals by status | %s |\n' "$prop_summary"
+    printf '| Verification log rows | %s (%s FAIL) |\n' "$v_rows" "$v_fails"
+    printf '| Research notes added | %s |\n\n' "$research_added"
+    printf '## What repeated\n\nAreas with two or more friction entries this month.\n\n'
+    retro_md_list "$repeated"
+    printf '\n## What we learned\n\nLessons added this month.\n\n'
+    retro_md_list "$(printf '%s\n' "$learned_records" | grep . || true)"
+    printf '\n## Retire candidates\n\nLessons older than 90 days. Listed for a person to review; nothing is deleted.\n\n'
+    retro_md_list "$retire"
+    printf '\n## Rollup candidates\n\n%s automatic-session snapshots are older than the current month. Nothing is moved or deleted.\n\n' "$rollup"
+    printf '## Next month\n\nTop suggestions from `./scripts/project suggest-upgrades`.\n\n'
+    retro_md_list "$next"
+  } > "$md_target"
+  printf 'created %s\n' "$md_target"
+
+  if [[ "$html" == true ]]; then
+    mkdir -p "$ROOT_DIR/.lavish"
+    local title_text="Retrospective $month"
+    local metrics_rows
+    metrics_rows="$(printf '%s\t%s\n' \
+      'Snapshots saved' "$snapshots" \
+      'Friction entries added' "$f_total (open $f_open, fixed $f_fixed, lesson $f_lesson)" \
+      'Recurring friction areas' "$repeated_count" \
+      'Lessons added' "$lessons_added" \
+      'Lessons in total' "$lessons_total ($lessons_checked with a check)" \
+      'Proposals by status' "$prop_summary" \
+      'Verification log rows' "$v_rows ($v_fails FAIL)" \
+      'Research notes added' "$research_added")"
+    {
+      printf '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
+      printf '  <title>%s</title>\n  <link rel="stylesheet" href="theme.css">\n</head>\n<body class="lv-page">\n' "$(html_escape "$title_text")"
+      printf '  <header class="lv-nav">\n    <div class="lv-wrap lv-nav-inner">\n      <span class="lv-brand">%s</span>\n' "$(html_escape "$title_text")"
+      printf '      <nav class="lv-links" aria-label="Sections"><a href="#numbers">Numbers</a><a href="#repeated">Repeated</a><a href="#learned">Learned</a><a href="#retire">Retire</a><a href="#next">Next</a></nav>\n'
+      printf '      <div class="lv-theme" role="group" aria-label="Appearance">\n'
+      printf '        <button type="button" data-lavish-action data-theme-choice="auto">Auto</button>\n'
+      printf '        <button type="button" data-lavish-action data-theme-choice="light">Light</button>\n'
+      printf '        <button type="button" data-lavish-action data-theme-choice="dark">Dark</button>\n'
+      printf '      </div>\n    </div>\n  </header>\n\n  <main class="lv-wrap">\n'
+      printf '    <section class="lv-hero lv-hero-solo" aria-labelledby="hero-title">\n      <div>\n        <h1 class="lv-title" id="hero-title">%s</h1>\n' "$(html_escape "What happened in $month.")"
+      printf '        <p class="lv-lede">A short look back at the month: what went wrong more than once, what we learned, and what to do next. It is generated from the project records.</p>\n      </div>\n    </section>\n\n'
+      printf '    <section class="lv-section" id="numbers" aria-labelledby="numbers-heading">\n      <h2 class="lv-h2" id="numbers-heading">The numbers</h2>\n'
+      printf '      <p class="lv-intro">Counts for %s, taken from snapshots, the friction log, lessons, proposals, and the verification log.</p>\n' "$(html_escape "$month")"
+      printf '      <div class="lv-table-wrap">\n        <table class="lv-table">\n          <thead><tr><th>Measure</th><th>Value</th></tr></thead>\n          <tbody>\n'
+      while IFS=$'\t' read -r line n; do
+        printf '            <tr><td>%s</td><td>%s</td></tr>\n' "$(html_escape "$line")" "$(html_escape "$n")"
+      done <<< "$metrics_rows"
+      printf '          </tbody>\n        </table>\n      </div>\n    </section>\n\n'
+      printf '    <section class="lv-section" id="repeated" aria-labelledby="repeated-heading">\n      <h2 class="lv-h2" id="repeated-heading">What repeated</h2>\n'
+      printf '      <p class="lv-intro">Problems that showed up two or more times. Repeats are the best candidates for a fix or a new check.</p>\n'
+      retro_html_cols "$repeated"
+      printf '    </section>\n\n'
+      printf '    <section class="lv-section" id="learned" aria-labelledby="learned-heading">\n      <h2 class="lv-h2" id="learned-heading">What we learned</h2>\n'
+      printf '      <p class="lv-intro">Lessons written down this month.</p>\n'
+      retro_html_cols "$(printf '%s\n' "$learned_records" | grep . || true)"
+      printf '    </section>\n\n'
+      printf '    <section class="lv-section" id="retire" aria-labelledby="retire-heading">\n      <h2 class="lv-h2" id="retire-heading">Worth a second look</h2>\n'
+      printf '      <p class="lv-intro">Lessons older than 90 days may be out of date. A person decides; nothing is deleted.</p>\n'
+      retro_html_cols "$retire"
+      printf '      <p class="lv-note"><strong>Snapshot rollup:</strong> %s automatic-session snapshots are older than this month. They could be summarized later; none were moved or deleted.</p>\n' "$(html_escape "$rollup")"
+      printf '    </section>\n\n'
+      printf '    <section class="lv-section" id="next" aria-labelledby="next-heading">\n      <h2 class="lv-h2" id="next-heading">Next month</h2>\n'
+      printf '      <p class="lv-intro">The top suggestions from the upgrade check, in priority order.</p>\n'
+      retro_html_cols "$next"
+      printf '    </section>\n\n'
+      printf '    <footer class="lv-footer"><p>Source of truth: <code>docs/retrospectives/%s.md</code>. Regenerate with <code>./scripts/project retro %s --force</code>.</p></footer>\n  </main>\n  <script src="theme.js"></script>\n</body>\n</html>\n' "$(html_escape "$month")" "$(html_escape "$month")"
+    } > "$html_target"
+    printf 'created %s\n' "$html_target"
+  fi
+
+  if [[ "$json" == true ]]; then
+    printf '{"status":"written","period":"%s","markdown":"docs/retrospectives/%s.md","html":%s,"metrics":{"snapshots":%s,"frictionAdded":%s,"recurringAreas":%s,"lessonsAdded":%s,"lessonsTotal":%s,"lessonsWithCheck":%s,"verificationRows":%s,"verificationFails":%s,"researchAdded":%s,"retireCandidates":%s,"rollupCandidates":%s}}\n' \
+      "$month" "$month" "$([[ "$html" == true ]] && printf '".lavish/retro-%s.html"' "$month" || printf 'null')" \
+      "$snapshots" "$f_total" "$repeated_count" "$lessons_added" "$lessons_total" "$lessons_checked" "$v_rows" "$v_fails" "$research_added" "$retire_count" "$rollup"
   fi
 }
 
@@ -636,6 +1164,18 @@ EOF
     ;;
   suggest-upgrades)
     suggest_upgrades "$@"
+    ;;
+  friction)
+    shift
+    friction_command "$@"
+    ;;
+  learn)
+    shift
+    learn_command "$@"
+    ;;
+  retro)
+    shift
+    retro_command "$@"
     ;;
   *)
     usage >&2

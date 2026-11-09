@@ -24,6 +24,7 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 - Before compaction or handoff, run `./scripts/project finish --summary "<short outcome>"`; it verifies the repository and creates the durable snapshot and automatic handoff. Use `./scripts/project compact <slug>` when a named, hand-authored snapshot is needed.
 - Keep `.agent-state/second-brain-checkpoint.md` current at meaningful milestones; optional user-level compaction hooks archive it without storing chat transcripts.
 - Shared second-brain archiving is optional; set `PROJECT_SNAPSHOT_ARCHIVE_ROOT` to a local vault path to mirror snapshots, and leave it unset for repository-only memory.
+- Record every session problem or user correction with `finish --friction` (or `./scripts/project friction`). Run `./scripts/project learn` when areas repeat; an approved lesson in `docs/lessons.md` ships with an enforcing check or a written reason. Run `./scripts/project retro --html` monthly.
 - Use `./scripts/project research`, `upgrade`, and `suggest-upgrades` for fresh comparisons and bounded improvements.
 - Use `/update-project-logic` in Claude Code or `$update-project-logic` in Codex for an explicit freshness review, at meaningful architecture/agent-harness milestones, or after a repeated workflow failure. It refreshes verified guidance, audits improvements and risks, and checks current AI development practice.
 - For UI, visual, or presentation work, load the `impeccable` skill and follow `PRODUCT.md` and `DESIGN.md`; its design hook reports findings after edits.
@@ -52,7 +53,7 @@ The user should focus on building the product. At the end of every substantive t
 - Security boundaries: `docs/security.md`
 - Active work: `docs/plans/active/`
 - Decisions: `docs/decisions/`
-- Lessons and retrospectives: `docs/lessons.md` and `docs/retrospectives/`
+- Lessons and retrospectives: `docs/state/friction.md` → `docs/lessons.md` → `docs/retrospectives/`
 - Research notes: `docs/research/`
 - Compaction history: `docs/compactions/`
 - Upgrade backlog: `docs/upgrades/`

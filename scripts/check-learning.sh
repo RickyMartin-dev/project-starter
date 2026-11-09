@@ -31,6 +31,31 @@ if ! grep -q 'verification-log' docs/state/proposals/README.md || ! grep -q 'app
   failures=$((failures + 1))
 fi
 
+if [[ -f docs/state/friction.md ]]; then
+  friction_pattern='^- [0-9]{4}-[0-9]{2}-[0-9]{2} \| [a-z0-9][a-z0-9-]* \| [^|]+ \| [^|]+ \| [^|]+ \| (open|fixed|lesson)$'
+  while IFS= read -r line; do
+    if [[ ! "$line" =~ $friction_pattern ]]; then
+      printf 'docs/state/friction.md has a malformed log line: %s\n' "$line" >&2
+      failures=$((failures + 1))
+    fi
+  done < <(awk '/^## Log/ { in_log = 1; next } /^## / { in_log = 0 } in_log && /^- /' docs/state/friction.md)
+fi
+
+snapshot_count=0
+for snapshot in docs/compactions/*.md; do
+  [[ -f "$snapshot" ]] || continue
+  [[ "$snapshot" == "docs/compactions/README.md" ]] && continue
+  snapshot_count=$((snapshot_count + 1))
+done
+lesson_count=0
+if [[ -f docs/lessons.md ]]; then
+  lesson_count="$(grep -cE '^- `?[0-9]{4}-[0-9]{2}-[0-9]{2} — ' docs/lessons.md || true)"
+fi
+if (( snapshot_count > 5 && lesson_count == 0 )); then
+  printf 'learning check: %s snapshots but no recorded lessons; run ./scripts/project learn and record lessons in docs/lessons.md.\n' "$snapshot_count" >&2
+  failures=$((failures + 1))
+fi
+
 if (( failures > 0 )); then
   printf 'learning check failed with %s issue(s).\n' "$failures" >&2
   exit 1

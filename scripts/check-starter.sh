@@ -134,6 +134,8 @@ required_files=(
   "scripts/check-specialists.sh"
   "scripts/check-presentation.sh"
   "scripts/check-design.sh"
+  "docs/state/friction.md"
+  ".agentic/secret-scan-ignore"
   "PRODUCT.md"
   "DESIGN.md"
   ".claude/settings.json"
@@ -175,10 +177,7 @@ if ! grep -q 'AGENTS.md' .cursor/rules/00-shared-context.mdc; then
   failures=$((failures + 1))
 fi
 
-if grep -RIl --exclude-dir=.git -E 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}' . >/dev/null 2>&1; then
-  printf 'possible credential material detected; inspect the repository.\n' >&2
-  failures=$((failures + 1))
-fi
+# Credential scanning lives in scripts/check-secrets.sh, which honors the reviewed .agentic/secret-scan-ignore allowlist.
 
 for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-design.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
   if ! bash "$ROOT_DIR/scripts/$security_check"; then

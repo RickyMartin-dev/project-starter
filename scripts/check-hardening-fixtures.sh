@@ -16,6 +16,7 @@ copy_fixture() {
   cp "$ROOT_DIR/scripts/check-project-logic-skill.sh" "$TEMP_DIR/scripts/"
   cp "$ROOT_DIR/scripts/archive_snapshot.py" "$TEMP_DIR/scripts/"
   cp "$ROOT_DIR/.agentic/manifest.json" "$TEMP_DIR/.agentic/"
+  cp "$ROOT_DIR/.agentic/secret-scan-ignore" "$TEMP_DIR/.agentic/"
   cp "$ROOT_DIR/.agentic/fixtures/untrusted-repo-note.md" "$TEMP_DIR/.agentic/fixtures/"
   cp "$ROOT_DIR/.agents/skills/update-project-logic/SKILL.md" "$TEMP_DIR/.agents/skills/update-project-logic/"
   cp "$ROOT_DIR/.agents/skills/update-project-logic/references/research-method.md" "$TEMP_DIR/.agents/skills/update-project-logic/references/"
@@ -92,6 +93,22 @@ ignored_prefix='xoxb'
 printf '%s\n' "${ignored_prefix}-12345678901234567890" > "$TEMP_DIR/ignored-secret.txt"
 expect_failure_with_message "ignored credential pattern" "possible credential material" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
 rm -f "$TEMP_DIR/ignored-secret.txt" "$TEMP_DIR/.gitignore"
+
+# Secret scan allowlist: ignored files are skipped, tracked or unignored ones fail.
+allow_dir=".agents/skills/impeccable/scripts/bin"
+mkdir -p "$TEMP_DIR/$allow_dir"
+printf 'AKIA%s\n' '1234567890ABCDEF' > "$TEMP_DIR/$allow_dir/engine"
+printf '%s/\n' "$allow_dir" > "$TEMP_DIR/.gitignore"
+if ! (cd "$TEMP_DIR" && bash scripts/check-secrets.sh >/dev/null 2>&1); then
+  printf 'hardening fixture failed: allowlisted gitignored file should pass the secret scan.\n' >&2
+  failures=$((failures + 1))
+fi
+rm -f "$TEMP_DIR/.gitignore"
+expect_failure_with_message "allowlisted but not ignored" "secret scan allowlist violation" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+git -C "$TEMP_DIR" add -f "$allow_dir/engine"
+expect_failure_with_message "allowlisted but tracked" "secret scan allowlist violation" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+git -C "$TEMP_DIR" rm -q -f --cached "$allow_dir/engine"
+rm -f "$TEMP_DIR/$allow_dir/engine"
 
 cat > "$TEMP_DIR/.github/workflows/unpinned.yml" <<'EOF'
 name: bad
@@ -257,6 +274,59 @@ cp "$ROOT_DIR/.agentic/manifest.json" "$TEMP_DIR/.agentic/manifest.json"
 sed 's/^  "upgradePolicy": \(.*\)$/  "upgradePolicy": \1,/' "$TEMP_DIR/.agentic/manifest.json" > "$TEMP_DIR/.agentic/manifest.modified.json"
 mv "$TEMP_DIR/.agentic/manifest.modified.json" "$TEMP_DIR/.agentic/manifest.json"
 expect_failure_with_message "trailing manifest comma" "manifest JSON shape is invalid" bash -c "cd '$TEMP_DIR' && bash scripts/check-manifest.sh"
+
+cp "$ROOT_DIR/.agentic/manifest.json" "$TEMP_DIR/.agentic/manifest.json"
+sed 's/^  "upgradePolicy": \(.*\)$/  "designSkill": {\n    "name": "impeccable"\n  },\n  "upgradePolicy": \1/' "$TEMP_DIR/.agentic/manifest.json" > "$TEMP_DIR/.agentic/manifest.modified.json"
+mv "$TEMP_DIR/.agentic/manifest.modified.json" "$TEMP_DIR/.agentic/manifest.json"
+expect_failure_with_message "nested manifest object" 'manifest key "designSkill" must be a string or an array of strings' bash -c "cd '$TEMP_DIR' && bash scripts/check-manifest.sh"
+cp "$ROOT_DIR/.agentic/manifest.json" "$TEMP_DIR/.agentic/manifest.json"
+
+# Git hooks after checkout/merge are advisory: a failing project start must not block.
+mkdir -p "$TEMP_DIR/scripts"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$TEMP_DIR/scripts/project"
+chmod +x "$TEMP_DIR/scripts/project"
+for hook in post-checkout post-merge; do
+  if ! hook_output=$(cd "$TEMP_DIR" && bash ".githooks/$hook" 2>&1); then
+    printf 'hardening fixture failed: %s must exit 0 when project start fails.\n' "$hook" >&2
+    failures=$((failures + 1))
+  elif ! grep -qF 'project start reported problems after checkout; run ./scripts/project check for details.' <<<"$hook_output"; then
+    printf 'hardening fixture failed: %s did not print the advisory line.\n' "$hook" >&2
+    failures=$((failures + 1))
+  fi
+done
+rm -f "$TEMP_DIR/scripts/project"
+
+# Lavish pages must use the shared theme and keep buttons clickable under the review overlay.
+DESIGN_DIR="$TEMP_DIR/design-fixture"
+mkdir -p "$DESIGN_DIR/scripts" "$DESIGN_DIR/.lavish" "$DESIGN_DIR/prompts" "$DESIGN_DIR/.claude/agents" "$DESIGN_DIR/.cursor/agents" "$DESIGN_DIR/.codex"
+cp "$ROOT_DIR/scripts/check-design.sh" "$DESIGN_DIR/scripts/"
+for file in PRODUCT.md DESIGN.md .lavish/theme.css .lavish/theme.js .claude/agents/impeccable-finish-reviewer.md .cursor/agents/impeccable-finish-reviewer.md; do
+  : > "$DESIGN_DIR/$file"
+done
+for provider in .agents .claude .cursor; do
+  mkdir -p "$DESIGN_DIR/$provider/skills/impeccable/scripts/bin"
+  : > "$DESIGN_DIR/$provider/skills/impeccable/SKILL.md"
+  printf '%s/skills/impeccable/scripts/bin/\n' "$provider" >> "$DESIGN_DIR/.gitignore"
+done
+for hook in .claude/settings.json .cursor/hooks.json .codex/hooks.json; do
+  mkdir -p "$DESIGN_DIR/$(dirname "$hook")"
+  printf 'skills/impeccable/scripts/impeccable\n' > "$DESIGN_DIR/$hook"
+done
+printf 'impeccable\n' > "$DESIGN_DIR/prompts/present.md"
+printf 'DESIGN.md\n' > "$DESIGN_DIR/AGENTS.md"
+git -C "$DESIGN_DIR" init -q
+good_page='<!doctype html><link rel="stylesheet" href="theme.css"><script src="theme.js"></script><button data-lavish-action="next">Next</button>'
+printf '%s\n' "$good_page" > "$DESIGN_DIR/.lavish/page.html"
+if ! (cd "$DESIGN_DIR" && bash scripts/check-design.sh >/dev/null 2>&1); then
+  printf 'hardening fixture failed: compliant Lavish page should pass the design check.\n' >&2
+  failures=$((failures + 1))
+fi
+printf '<!doctype html><script src="theme.js"></script>\n' > "$DESIGN_DIR/.lavish/page.html"
+expect_failure_with_message "lavish page without theme.css" "Lavish page must link theme.css" bash -c "cd '$DESIGN_DIR' && bash scripts/check-design.sh"
+printf '%s\n<script src="https://cdn.tailwindcss.com"></script>\n' "$good_page" > "$DESIGN_DIR/.lavish/page.html"
+expect_failure_with_message "lavish page with tailwind cdn" "must not load Tailwind" bash -c "cd '$DESIGN_DIR' && bash scripts/check-design.sh"
+printf '%s\n<button class="btn"\n  type="button">Bad</button>\n' "$good_page" > "$DESIGN_DIR/.lavish/page.html"
+expect_failure_with_message "lavish button without data-lavish-action" "missing data-lavish-action" bash -c "cd '$DESIGN_DIR' && bash scripts/check-design.sh"
 
 if (( failures > 0 )); then
   printf 'hardening fixture check failed with %s issue(s).\n' "$failures" >&2

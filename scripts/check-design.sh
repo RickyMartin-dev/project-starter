@@ -30,6 +30,23 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   done
 fi
 
+for page in .lavish/*.html; do
+  [[ -f "$page" ]] || continue
+  grep -qF 'theme.css' "$page" || fail "Lavish page must link theme.css: $page"
+  grep -qF 'theme.js' "$page" || fail "Lavish page must load theme.js: $page"
+  # Match loads (src/href/@import), not prose that merely mentions the names.
+  if grep -qiE "(src|href)=[\"'][^\"']*(cdn\\.tailwindcss|@tailwindcss/browser|daisyui)|@import[^;]*(tailwindcss|daisyui)" "$page"; then
+    fail "Lavish page must not load Tailwind or daisyUI; use the shared theme: $page"
+  fi
+  # Buttons need data-lavish-action so the Lavish review overlay lets clicks through.
+  while IFS= read -r button; do
+    [[ -n "$button" ]] || continue
+    if ! grep -qF 'data-lavish-action' <<<"$button"; then
+      fail "Lavish page button is missing data-lavish-action: $page: ${button:0:80}"
+    fi
+  done < <(tr '\n' ' ' < "$page" | grep -oiE '<button[^>]*>' || true)
+done
+
 grep -qF 'impeccable' prompts/present.md || fail 'prompts/present.md must route visual work through the impeccable skill.'
 grep -qF 'DESIGN.md' AGENTS.md || fail 'AGENTS.md must point design work at DESIGN.md.'
 

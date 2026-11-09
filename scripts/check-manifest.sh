@@ -45,6 +45,17 @@ if ! awk '
       value ~ /^[[:space:]]*"[A-Za-z][A-Za-z0-9]*"[[:space:]]*:[[:space:]]*"[^"]*"[[:space:]]*,?[[:space:]]*$/
   }
   function is_array_item(value) { return value ~ /^[[:space:]]*"[^"]+"[[:space:]]*,?[[:space:]]*$/ }
+  function fail_line(lineno, value,    key) {
+    if (reason != "") return
+    if (match(value, /^[[:space:]]*"[A-Za-z][A-Za-z0-9]*"[[:space:]]*:[[:space:]]*\{/)) {
+      key = value
+      sub(/^[[:space:]]*"/, "", key)
+      sub(/".*$/, "", key)
+      reason = "manifest key \"" key "\" must be a string or an array of strings; nested objects are not supported, use flat keys such as " key "Source."
+    } else {
+      reason = "manifest line " lineno " is not a flat \"key\": value pair or array item: " value
+    }
+  }
   { lines[NR] = $0 }
   END {
     valid = (NR >= 2 && lines[1] ~ /^[[:space:]]*\{[[:space:]]*$/ && is_close_brace(lines[NR]))
@@ -70,6 +81,7 @@ if ! awk '
           }
         } else {
           valid = 0
+          fail_line(i, current)
         }
         continue
       }
@@ -84,9 +96,11 @@ if ! awk '
         }
       } else {
         valid = 0
+        fail_line(i, current)
       }
     }
     if (in_array) valid = 0
+    if (!valid && reason != "") print reason > "/dev/stderr"
     exit(valid ? 0 : 1)
   }
 ' "$manifest"; then

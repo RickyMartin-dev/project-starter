@@ -39,7 +39,13 @@ There is no application server or product build. Use the repository command to i
 ./scripts/project archive-snapshot --summary "<outcome>" [--agent codex|claude]
 ./scripts/project research <slug> "<research question>"
 ./scripts/project upgrade <slug> "<upgrade title>"
-./scripts/project suggest-upgrades [--json]
+./scripts/project suggest-upgrades [--json]   # ranked by friction, failures, unchecked lessons, stale research
+
+# Learning loop
+./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|lesson]
+./scripts/project finish --summary "<outcome>" --friction "<area>|<symptom>|<cause>|<fix>"
+./scripts/project learn [--json]          # drafts proposals for areas with 2+ entries
+./scripts/project retro [YYYY-MM] [--html] [--force] [--json]
 ./scripts/project specialist <slug> "<role title>"
 
 # Design (Impeccable skill; Claude Code: /impeccable, Codex: $impeccable)
