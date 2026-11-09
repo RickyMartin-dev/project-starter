@@ -139,7 +139,7 @@ for path in AGENTS.md CLAUDE.md .agents/skills .claude/rules .claude/commands .c
   fi
 done
 
-for check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
+for check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-design.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
   if ! grep -qF "scripts/$check" "$manifest"; then
     printf 'manifest hardeningChecks is missing scripts/%s.\n' "$check" >&2
     failures=$((failures + 1))

@@ -12,7 +12,8 @@
 
 # Agent-local state and transcripts
 .agent-state/
-.codex/
+.codex/*
+!.codex/hooks.json
 .claude/settings.local.json
 .cursor/*.local.json
 .cursor/mcp.json
@@ -22,3 +23,10 @@ dist/
 build/
 coverage/
 *.log
+
+# Impeccable engine binaries download per platform on first run; local design state stays local.
+.agents/skills/impeccable/scripts/bin/
+.claude/skills/impeccable/scripts/bin/
+.cursor/skills/impeccable/scripts/bin/
+.impeccable/*.local.json
+.impeccable/hook.cache.json

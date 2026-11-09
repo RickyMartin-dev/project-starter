@@ -17,4 +17,6 @@ Open it locally with:
 npx -y lavish-axi .lavish/project-starter-operating-system.html
 ```
 
+All pages share `.lavish/theme.css` and `.lavish/theme.js` (Auto, Light, Dark). `.lavish/theme-preview.html` shows every component in both appearances; `DESIGN.md` records the rules. Design work goes through the `impeccable` skill.
+
 Keep presentation claims linked to repository files. The HTML is a communication artifact, not a second source of truth. Create future presentations under `.lavish/` and register their purpose here.

@@ -26,6 +26,7 @@ Build useful, maintainable software with small, reviewable changes. Treat the re
 - Shared second-brain archiving is optional; set `PROJECT_SNAPSHOT_ARCHIVE_ROOT` to a local vault path to mirror snapshots, and leave it unset for repository-only memory.
 - Use `./scripts/project research`, `upgrade`, and `suggest-upgrades` for fresh comparisons and bounded improvements.
 - Use `/update-project-logic` in Claude Code or `$update-project-logic` in Codex for an explicit freshness review, at meaningful architecture/agent-harness milestones, or after a repeated workflow failure. It refreshes verified guidance, audits improvements and risks, and checks current AI development practice.
+- For UI, visual, or presentation work, load the `impeccable` skill and follow `PRODUCT.md` and `DESIGN.md`; its design hook reports findings after edits.
 - Use `./scripts/project specialist` only to create a reviewed role brief; never infer credentials, unrestricted tools, or autonomous spawning.
 
 ## Verification contract
@@ -56,7 +57,8 @@ The user should focus on building the product. At the end of every substantive t
 - Compaction history: `docs/compactions/`
 - Upgrade backlog: `docs/upgrades/`
 - Specialist role cards: `agents/`
-- Lavish review surfaces: `.lavish/` and `docs/presentations/`
+- Lavish review surfaces: `.lavish/` (shared `theme.css`) and `docs/presentations/`
+- Design context: `PRODUCT.md`, `DESIGN.md`, and the `impeccable` skill
 - Durable cross-session state: `docs/state/` (advisory until reviewed)
 - Learning proposals: `docs/state/proposals/` (review before promotion)
 - Machine-readable starter contract: `.agentic/manifest.json`

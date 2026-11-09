@@ -42,6 +42,10 @@ There is no application server or product build. Use the repository command to i
 ./scripts/project suggest-upgrades [--json]
 ./scripts/project specialist <slug> "<role title>"
 
+# Design (Impeccable skill; Claude Code: /impeccable, Codex: $impeccable)
+.claude/skills/impeccable/scripts/impeccable detect --json .lavish/
+npx impeccable update   # refresh skills and hooks for all providers
+
 # Combined project-guidance and current-practice review
 # Claude Code: /update-project-logic
 # Codex:       $update-project-logic

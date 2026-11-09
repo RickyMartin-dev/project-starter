@@ -133,6 +133,12 @@ required_files=(
   "scripts/check-upgrades.sh"
   "scripts/check-specialists.sh"
   "scripts/check-presentation.sh"
+  "scripts/check-design.sh"
+  "PRODUCT.md"
+  "DESIGN.md"
+  ".claude/settings.json"
+  ".lavish/theme.css"
+  ".lavish/theme.js"
   "scripts/check-automation.sh"
   "scripts/archive_snapshot.py"
   "scripts/check-snapshot-archive.sh"
@@ -174,7 +180,7 @@ if grep -RIl --exclude-dir=.git -E 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|AKIA[0-9A
   failures=$((failures + 1))
 fi
 
-for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
+for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-design.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
   if ! bash "$ROOT_DIR/scripts/$security_check"; then
     failures=$((failures + 1))
   fi

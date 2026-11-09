@@ -29,6 +29,13 @@
   "specialistDirectory": "agents/specialists/",
   "specialistFactoryPrompt": "prompts/factory.md",
   "presentationArtifact": ".lavish/project-starter-operating-system.html",
+  "presentationTheme": ".lavish/theme.css",
+  "productContext": "PRODUCT.md",
+  "designSystem": "DESIGN.md",
+  "designSkill": "impeccable",
+  "designSkillSource": "https://github.com/pbakaus/impeccable",
+  "designDetectCommand": ".claude/skills/impeccable/scripts/impeccable detect --json .lavish/",
+  "designUpdateCommand": "npx impeccable update",
   "workflowIds": [
     "plan",
     "verify",
@@ -55,6 +62,7 @@
     "scripts/check-upgrades.sh",
     "scripts/check-specialists.sh",
     "scripts/check-presentation.sh",
+    "scripts/check-design.sh",
     "scripts/check-automation.sh",
     "scripts/check-snapshot-archive.sh",
     "scripts/check-project-logic-skill.sh"
@@ -68,7 +76,13 @@
     ".cursor/rules/",
     ".cursor/commands/",
     "agents/",
-    ".lavish/"
+    ".lavish/",
+    ".claude/agents/",
+    ".claude/settings.json",
+    ".cursor/skills/",
+    ".cursor/agents/",
+    ".cursor/hooks.json",
+    ".codex/hooks.json"
   ],
   "durableState": "docs/state/",
   "mutableProjectFiles": [

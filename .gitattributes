@@ -1,0 +1,4 @@
+# Vendored Impeccable skill copies keep upstream formatting (npx impeccable update overwrites them).
+.agents/skills/impeccable/** -whitespace
+.claude/skills/impeccable/** -whitespace
+.cursor/skills/impeccable/** -whitespace

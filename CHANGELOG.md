@@ -2,6 +2,11 @@
 
 All notable changes to this starter are recorded here.
 
+## 2026-11-08
+
+- Adopted the Impeccable design skill for Claude Code, Codex, and Cursor, with design hooks, review subagents, `PRODUCT.md`, `DESIGN.md`, and `scripts/check-design.sh`. Engine binaries stay gitignored. Decision: `docs/decisions/2026-11-08-impeccable-design-skill.md`.
+- Added the shared Lavish theme (`.lavish/theme.css`, `.lavish/theme.js`) and a light/dark sign-off preview.
+
 ## 2026-10-24
 
 - Added the cross-agent `update-project-logic` skill for Codex and Claude Code, with fresh-source research, project learning refresh, concise improvement/security reporting, and provider-copy drift checks.

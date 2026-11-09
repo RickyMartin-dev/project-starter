@@ -33,7 +33,7 @@ scan_files=()
 if [[ -d .git ]]; then
   while IFS= read -r -d '' file; do
     case "$file" in
-      scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
+      .agents/skills/impeccable/scripts/bin/*|.claude/skills/impeccable/scripts/bin/*|.cursor/skills/impeccable/scripts/bin/*|scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
         continue
         ;;
       *)
@@ -49,7 +49,7 @@ else
   while IFS= read -r -d '' file; do
     relative_file="${file#./}"
     case "$relative_file" in
-      scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
+      .agents/skills/impeccable/scripts/bin/*|.claude/skills/impeccable/scripts/bin/*|.cursor/skills/impeccable/scripts/bin/*|scripts/check-secrets.sh|.git/*|.codex/*|.agent-state/*|node_modules/*|dist/*|build/*|coverage/*)
         continue
         ;;
       *)
