@@ -72,7 +72,7 @@ For an existing clean repository, copy or merge this starter into the repository
 8. Compact: snapshot facts, decisions, evidence, risks, and next actions before context compaction or handoff.
 9. Research: compare fresh external practice and record what to adopt, defer, or reject.
 10. Upgrade: create a bounded proposal, verify it, and promote only the smallest safe improvement.
-11. Complete: run `./scripts/project finish`, which captures the durable snapshot and handoff automatically; update the changelog when the project uses one.
+11. Complete: run `./scripts/project finish`, which captures the durable snapshot and handoff automatically; update [`docs/CHANGELOG.md`](docs/CHANGELOG.md) when the project uses one.
 
 The detailed contract is in [`docs/agent-workflow.md`](docs/agent-workflow.md). The template is designed for a human to remain the decision-maker while agents handle bounded, reviewable execution.
 
@@ -128,6 +128,11 @@ For a visual walkthrough and the latest gap-resolution report, open [`docs/prese
 ## Research behind the structure
 
 See [`docs/research/agentic-starter-repos.md`](docs/research/agentic-starter-repos.md) for the repository patterns that informed this template, including firstmate, Karpathy's autoresearch, Codex's repository guidance, and Cursor's rules and commands model.
+
+## Project guides
+
+- [Contribution guidelines](docs/CONTRIBUTING.md)
+- [Changelog](docs/CHANGELOG.md)
 
 ## License
 

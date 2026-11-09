@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-11-08 23:10 EST
-- Snapshot: `docs/compactions/2026-11-08-231019-automatic-session.md`
+- Updated: 2026-11-08 23:48 EST
+- Snapshot: `docs/compactions/2026-11-08-234821-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Restored Lavish section navigation and verified annotations
+Moved contribution and changelog guides under docs and preserved discoverability
 
 ## Resume path
 
