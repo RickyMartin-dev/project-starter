@@ -315,7 +315,7 @@ done
 printf 'impeccable\n' > "$DESIGN_DIR/prompts/present.md"
 printf 'DESIGN.md\n' > "$DESIGN_DIR/AGENTS.md"
 git -C "$DESIGN_DIR" init -q
-good_page='<!doctype html><link rel="stylesheet" href="theme.css"><script src="theme.js"></script><button data-lavish-action="next">Next</button>'
+good_page='<!doctype html><link rel="stylesheet" href="theme.css"><script src="theme.js"></script><nav class="lv-links"><a href="#one" data-lavish-action>One</a></nav><button data-lavish-action="next">Next</button>'
 printf '%s\n' "$good_page" > "$DESIGN_DIR/.lavish/page.html"
 if ! (cd "$DESIGN_DIR" && bash scripts/check-design.sh >/dev/null 2>&1); then
   printf 'hardening fixture failed: compliant Lavish page should pass the design check.\n' >&2
@@ -327,6 +327,8 @@ printf '%s\n<script src="https://cdn.tailwindcss.com"></script>\n' "$good_page" 
 expect_failure_with_message "lavish page with tailwind cdn" "must not load Tailwind" bash -c "cd '$DESIGN_DIR' && bash scripts/check-design.sh"
 printf '%s\n<button class="btn"\n  type="button">Bad</button>\n' "$good_page" > "$DESIGN_DIR/.lavish/page.html"
 expect_failure_with_message "lavish button without data-lavish-action" "missing data-lavish-action" bash -c "cd '$DESIGN_DIR' && bash scripts/check-design.sh"
+printf '<!doctype html><link rel="stylesheet" href="theme.css"><script src="theme.js"></script><nav class="lv-links"><a href="#one">One</a></nav>\n' > "$DESIGN_DIR/.lavish/page.html"
+expect_failure_with_message "lavish nav link without data-lavish-action" "Lavish section nav link is missing data-lavish-action" bash -c "cd '$DESIGN_DIR' && bash scripts/check-design.sh"
 
 if (( failures > 0 )); then
   printf 'hardening fixture check failed with %s issue(s).\n' "$failures" >&2

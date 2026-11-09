@@ -994,7 +994,7 @@ retro_command() {
       printf '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n'
       printf '  <title>%s</title>\n  <link rel="stylesheet" href="theme.css">\n</head>\n<body class="lv-page">\n' "$(html_escape "$title_text")"
       printf '  <header class="lv-nav">\n    <div class="lv-wrap lv-nav-inner">\n      <span class="lv-brand">%s</span>\n' "$(html_escape "$title_text")"
-      printf '      <nav class="lv-links" aria-label="Sections"><a href="#numbers">Numbers</a><a href="#repeated">Repeated</a><a href="#learned">Learned</a><a href="#retire">Retire</a><a href="#next">Next</a></nav>\n'
+      printf '      <nav class="lv-links" aria-label="Sections"><a href="#numbers" data-lavish-action>Numbers</a><a href="#repeated" data-lavish-action>Repeated</a><a href="#learned" data-lavish-action>Learned</a><a href="#retire" data-lavish-action>Retire</a><a href="#next" data-lavish-action>Next</a></nav>\n'
       printf '      <div class="lv-theme" role="group" aria-label="Appearance">\n'
       printf '        <button type="button" data-lavish-action data-theme-choice="auto">Auto</button>\n'
       printf '        <button type="button" data-lavish-action data-theme-choice="light">Light</button>\n'

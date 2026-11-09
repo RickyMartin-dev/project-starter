@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-11-08 19:18 EST
-- Snapshot: `docs/compactions/2026-11-08-191812-automatic-session.md`
+- Updated: 2026-11-08 23:10 EST
+- Snapshot: `docs/compactions/2026-11-08-231019-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Added learning loop: friction log, learn command, lessons gate, evidence-ranked suggest-upgrades, monthly retro with Lavish page; turned 2026-11-08 lessons into checks; migrated walkthrough to theme
+Restored Lavish section navigation and verified annotations
 
 ## Resume path
 

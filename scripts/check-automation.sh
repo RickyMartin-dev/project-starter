@@ -370,7 +370,7 @@ if ! (cd "$evidence_fixture" && ./scripts/project retro 2026-11 --force >/dev/nu
 fi
 retro_html="$evidence_fixture/.lavish/retro-2026-11.html"
 if [[ ! -f "$retro_html" ]] || ! grep -qF 'theme.css' "$retro_html" || ! grep -qF 'theme.js' "$retro_html" || \
-   ! grep -qF 'data-lavish-action' "$retro_html" || grep -qF '<style' "$retro_html"; then
+   ! grep -qF '<a href="#numbers" data-lavish-action>' "$retro_html" || grep -qF '<style' "$retro_html"; then
   printf 'retro --html output does not follow the shared Lavish theme.\n' >&2
   failures=$((failures + 1))
 fi

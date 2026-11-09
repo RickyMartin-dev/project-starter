@@ -45,6 +45,17 @@ for page in .lavish/*.html; do
       fail "Lavish page button is missing data-lavish-action: $page: ${button:0:80}"
     fi
   done < <(tr '\n' ' ' < "$page" | grep -oiE '<button[^>]*>' || true)
+  # Lavish's review overlay must let in-page navigation links reach their anchors.
+  while IFS= read -r link; do
+    [[ -n "$link" ]] || continue
+    if ! grep -qF 'data-lavish-action' <<<"$link"; then
+      fail "Lavish section nav link is missing data-lavish-action: $page: ${link:0:80}"
+    fi
+  done < <(
+    tr '\n' ' ' < "$page" |
+      grep -oiE '<nav[^>]*class="[^"]*lv-links[^"]*"[^>]*>.*</nav>' |
+      grep -oiE '<a[^>]*>' || true
+  )
 done
 
 grep -qF 'impeccable' prompts/present.md || fail 'prompts/present.md must route visual work through the impeccable skill.'
