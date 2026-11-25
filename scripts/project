@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/learning-evidence.sh"
 
 usage() {
   cat <<'EOF'
@@ -22,7 +23,7 @@ Usage:
   ./scripts/project specialist <slug> [title]
   ./scripts/project suggest-upgrades [--json]
   ./scripts/project recall "query" [--limit 1-10] [--json]
-  ./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|lesson] [--check <script-or-none-reason>]
+  ./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|correction|lesson] [--check <script-or-none-reason>]
   ./scripts/project learn [--json]
   ./scripts/project retro [YYYY-MM] [--html] [--json] [--force]
 
@@ -207,7 +208,7 @@ collect_signals() {
     elif (( opens >= 1 )); then
       singles=$((singles + 1))
     fi
-  done < <(friction_entries | awk -F' [|] ' '$6 != "lesson" { c[$2]++; if ($6 == "open") o[$2]++ } END { for (a in c) print c[a], o[a] + 0, a }' | sort -k1,1nr -k3,3)
+  done < <(friction_entries | awk -F' [|] ' '$6 != "lesson" && $6 != "correction" { c[$2]++; if ($6 == "open") o[$2]++ } END { for (a in c) print c[a], o[a] + 0, a }' | sort -k1,1nr -k3,3)
   if (( singles > 0 )); then
     add_signal friction-open "resolve $singles open friction entries" "docs/state/friction.md"
   fi
@@ -383,73 +384,290 @@ json_safe() {
 }
 
 friction_log="$ROOT_DIR/docs/state/friction.md"
-friction_line_pattern='^- [0-9]{4}-[0-9]{2}-[0-9]{2} \| [a-z0-9][a-z0-9-]* \| [^|]+ \| [^|]+ \| [^|]+ \| (open|fixed|lesson)$'
+friction_line_pattern='^- [0-9]{4}-[0-9]{2}-[0-9]{2} \| [a-z0-9][a-z0-9-]* \| [^|]+ \| [^|]+ \| [^|]+ \| (open|fixed|correction|lesson)$'
 
 friction_field() {
   local value
-  value="$(sanitize_summary "${1:-}" | tr -d '|' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')"
+  value="$(sanitize_summary "${1:-}" | tr -d '|' | sed -E 's/—[[:space:]]*(source|check):/ - \1:/Ig; s/[[:space:]]+/ /g; s/^ //; s/ $//')"
   printf '%s' "${value:-unknown}"
 }
 
-append_curated_lesson() {
-  local area="$1" symptom="$2" cause="$3" fix="$4" check="${5:-}"
-  local today entry lessons="$ROOT_DIR/docs/lessons.md"
-  today="$(date +%F)"
-  if [[ -z "$check" ]]; then
-    check='none: explicit standing user correction requires semantic judgment and is enforced through project guidance'
+friction_prepare_target() {
+  local target="$1" parent probe relative root_real parent_real expected_parent component index
+  local -a path_components=()
+  case "$target" in
+    "$ROOT_DIR"/*) relative="${target#"$ROOT_DIR"/}" ;;
+    *) printf 'refusing friction data target outside the repository: %s\n' "$target" >&2; return 1 ;;
+  esac
+  IFS='/' read -r -a path_components <<< "$relative"
+  if (( ${#path_components[@]} < 2 )); then
+    printf 'refusing invalid friction data target: %s\n' "$target" >&2
+    return 1
+  fi
+  root_real="$(cd "$ROOT_DIR" && pwd -P)" || return 1
+  expected_parent="$root_real"
+  parent="$ROOT_DIR"
+  for ((index = 0; index < ${#path_components[@]} - 1; index++)); do
+    component="${path_components[$index]}"
+    if [[ -z "$component" || "$component" == . || "$component" == .. ]]; then
+      printf 'refusing invalid friction data path component in: %s\n' "$target" >&2
+      return 1
+    fi
+    parent="$parent/$component"
+    expected_parent="$expected_parent/$component"
+    if [[ -L "$parent" ]]; then
+      printf 'refusing symlinked friction data directory: %s\n' "$parent" >&2
+      return 1
+    fi
+  done
+  parent="$(dirname "$target")"
+  if ! mkdir -p "$parent"; then
+    printf 'cannot prepare friction data directory: %s\n' "$parent" >&2
+    return 1
+  fi
+  parent_real="$(cd "$parent" && pwd -P)" || {
+    printf 'cannot resolve friction data directory: %s\n' "$parent" >&2
+    return 1
+  }
+  if [[ "$parent_real" != "$expected_parent" ]]; then
+    printf 'refusing friction data directory outside its repository path: %s\n' "$parent" >&2
+    return 1
+  fi
+  if [[ -L "$target" ]]; then
+    printf 'refusing symlinked friction data target: %s\n' "$target" >&2
+    return 1
+  fi
+  if [[ -e "$target" || -L "$target" ]]; then
+    if [[ ! -f "$target" ]]; then
+      printf 'cannot append friction data; target is not a regular file: %s\n' "$target" >&2
+      return 1
+    fi
+    if [[ ! -r "$target" ]]; then
+      printf 'cannot read friction data target: %s\n' "$target" >&2
+      return 1
+    fi
+    if ! ( : >> "$target" ) 2>/dev/null; then
+      printf 'cannot append friction data; target is not writable: %s\n' "$target" >&2
+      return 1
+    fi
   else
-    check="$(friction_field "$check")"
-    if [[ "$check" == none:* && -z "${check#none:}" ]]; then
-      printf 'a lesson with check: none must include a reason.\n' >&2
-      return 2
+    probe="$(mktemp "$parent/.project-append-test.XXXXXX")" || {
+      printf 'cannot write friction data directory: %s\n' "$parent" >&2
+      return 1
+    }
+    if ! rm -f "$probe"; then
+      printf 'cannot remove friction data write probe: %s\n' "$probe" >&2
+      return 1
     fi
   fi
-  entry="$today — $area: $symptom — apply: $fix — evidence: $cause (docs/state/friction.md) — check: $check"
-  mkdir -p "$(dirname "$lessons")"
-  [[ -f "$lessons" ]] || printf '# Lessons\n\nKeep this list short, specific, and durable.\n\n## Log\n\n' > "$lessons"
-  if ! grep -Fqx -- "- $entry" "$lessons"; then
-    printf -- '- %s\n' "$entry" >> "$lessons"
+}
+
+friction_initialize_log() {
+  friction_prepare_target "$friction_log" || return 1
+  if [[ ! -f "$friction_log" ]]; then
+    friction_prepare_target "$friction_log" || return 1
+    if ! printf '# Friction log\n\nAppend-only record of session problems and user corrections. Keep entries sanitized.\n\n`- YYYY-MM-DD | <area> | <symptom> | <cause> | <fix> | <status>`\n\n## Log\n\n' > "$friction_log"; then
+      printf 'cannot initialize friction log: %s\n' "$friction_log" >&2
+      return 1
+    fi
   fi
+}
+
+append_curated_lesson() {
+  local area="$1" symptom="$2" cause="$3" fix="$4" check="${5:-}" source="${6:-lesson}"
+  local today="${7:-}" entry source_label='general lesson' lessons="$ROOT_DIR/docs/lessons.md"
+  curated_lesson_added=false
+  today="${today:-$(date +%F)}"
+  area="$(friction_field "$area")"
+  symptom="$(friction_field "$symptom")"
+  cause="$(friction_field "$cause")"
+  fix="$(friction_field "$fix")"
+  check="$(friction_field "$check")"
+  if [[ "$source" == correction ]]; then
+    source_label='standing user correction'
+  fi
+  if [[ "$source" == correction && "$check" == unknown ]]; then
+    check='none: standing user correction requires human judgment and is enforced through project guidance'
+  fi
+  if [[ "$check" == none:* && -z "${check#none:}" ]]; then
+    printf 'a lesson with check: none must include a reason.\n' >&2
+    return 2
+  fi
+  entry="$today — $area: $symptom — apply: $fix — evidence: $cause — source: $source_label (docs/state/friction.md) — check: $check"
+  friction_prepare_target "$lessons" || return 1
+  if [[ ! -f "$lessons" ]]; then
+    friction_prepare_target "$lessons" || return 1
+    if ! printf '# Lessons\n\nKeep this list short, specific, and durable.\n\n## Log\n\n' > "$lessons"; then
+      printf 'cannot initialize curated lessons: %s\n' "$lessons" >&2
+      return 1
+    fi
+  fi
+  if grep -Fqx -- "- $entry" "$lessons"; then
+    return 0
+  else
+    local grep_status=$?
+    if (( grep_status != 1 )); then
+      printf 'cannot read curated lessons: %s\n' "$lessons" >&2
+      return 1
+    fi
+  fi
+  friction_prepare_target "$lessons" || return 1
+  if ! printf -- '- %s\n' "$entry" >> "$lessons"; then
+    printf 'cannot append curated lesson: %s\n' "$lessons" >&2
+    return 1
+  fi
+  curated_lesson_added=true
 }
 
 friction_area_slug() {
   printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'
 }
 
+friction_validate_lesson_evidence() {
+  learning_validate_general_evidence "$ROOT_DIR" "$1" "$2" || return 2
+}
+
+friction_verify_lesson_check() {
+  local check="${1:-}"
+  local script
+  [[ -z "$check" ]] && return 0
+  check="$(friction_field "$check")"
+  [[ "$check" == none:* ]] && return 0
+  script="$(learning_check_script_path "$ROOT_DIR" "$check")" || {
+    printf 'lesson verification check must be an executable regular script directly under scripts/.\n' >&2
+    return 2
+  }
+  if ! (cd "$ROOT_DIR" && bash "$script") >/dev/null; then
+    printf 'lesson verification check failed: %s\n' "$script" >&2
+    return 1
+  fi
+}
+
 friction_validate() {
-  local area status="${2:-open}" check="${3:-}" normalized_check
+  local area status="${2:-open}" check="${3:-}" cause="$(friction_field "${4:-}")" normalized_check
   area="$(friction_area_slug "${1:-}")"
   if ! valid_slug "$area"; then
     printf 'friction area must be a short kebab-case slug.\n' >&2
     return 2
   fi
   case "$status" in
-    open|fixed|lesson) ;;
-    *) printf 'friction status must be open, fixed, or lesson.\n' >&2; return 2 ;;
+    open|fixed|correction|lesson) ;;
+    *) printf 'friction status must be open, fixed, correction, or lesson.\n' >&2; return 2 ;;
   esac
-  if [[ "$status" == lesson && -n "$check" ]]; then
+  if [[ "$status" == lesson || ( "$status" == correction && -n "$check" ) ]]; then
     normalized_check="$(friction_field "$check")"
+    if [[ "$status" == lesson && "$normalized_check" == unknown ]]; then
+      printf 'a general lesson requires an enforcing check or a justified none: reason.\n' >&2
+      return 2
+    fi
     if [[ "$normalized_check" == none:* && -z "${normalized_check#none:}" ]]; then
       printf 'a lesson with check: none must include a reason.\n' >&2
       return 2
     fi
   fi
+  if [[ "$status" == lesson ]]; then
+    friction_validate_lesson_evidence "$cause" "$normalized_check" || return $?
+  fi
 }
 
 friction_append() {
-  local area symptom cause fix status="${5:-open}" check="${6:-}"
-  friction_validate "${1:-}" "$status" "$check" || return $?
+  local area symptom cause fix status="${5:-open}" check="${6:-}" verified="${7:-false}"
+  friction_validate "${1:-}" "$status" "$check" "${3:-}" || return $?
   area="$(friction_area_slug "${1:-}")"
   symptom="$(friction_field "${2:-}")"
   cause="$(friction_field "${3:-}")"
   fix="$(friction_field "${4:-}")"
-  if [[ ! -f "$friction_log" ]]; then
-    mkdir -p "$(dirname "$friction_log")"
-    printf '# Friction log\n\nAppend-only record of session problems and user corrections. Keep entries sanitized.\n\n`- YYYY-MM-DD | <area> | <symptom> | <cause> | <fix> | <status>`\n\n## Log\n\n' > "$friction_log"
+  friction_prepare_target "$friction_log" || return 1
+  if [[ "$status" == lesson || "$status" == correction ]]; then
+    friction_prepare_target "$ROOT_DIR/docs/lessons.md" || return 1
+    if [[ "$verified" != true ]]; then
+      friction_verify_lesson_check "$check" || return $?
+    fi
+    # Write the idempotent lesson first so retries after an append failure do not
+    # add duplicate friction evidence rows.
+    append_curated_lesson "$area" "$symptom" "$cause" "$fix" "$check" "$status" || return 1
   fi
-  printf -- '- %s | %s | %s | %s | %s | %s\n' "$(date +%F)" "$area" "$symptom" "$cause" "$fix" "$status" >> "$friction_log"
-  if [[ "$status" == lesson ]]; then
-    append_curated_lesson "$area" "$symptom" "$cause" "$fix" "$check"
+  friction_initialize_log || return 1
+  friction_prepare_target "$friction_log" || return 1
+  if ! printf -- '- %s | %s | %s | %s | %s | %s\n' "$(date +%F)" "$area" "$symptom" "$cause" "$fix" "$status" >> "$friction_log"; then
+    printf 'cannot append friction entry: %s\n' "$friction_log" >&2
+    return 1
+  fi
+}
+
+friction_validate_pending() {
+  local pending="$1" pending_line pending_contents pending_date pending_area pending_symptom pending_cause pending_fix status has_correction=false
+  [[ -e "$pending" || -L "$pending" ]] || return 0
+  friction_prepare_target "$pending" || return 1
+  friction_prepare_target "$friction_log" || return 1
+  if ! pending_contents="$(cat "$pending")"; then
+    printf 'cannot read pending friction entries; the queue was retained.\n' >&2
+    return 1
+  fi
+  while IFS= read -r pending_line || [[ -n "$pending_line" ]]; do
+    [[ -n "$pending_line" ]] || continue
+    if [[ ! "$pending_line" =~ $friction_line_pattern ]]; then
+      printf 'pending friction entry is malformed; it was retained for review.\n' >&2
+      return 1
+    fi
+    IFS='|' read -r pending_date pending_area pending_symptom pending_cause pending_fix status <<<"$pending_line"
+    status="$(printf '%s' "$status" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+    case "$status" in
+      correction) has_correction=true ;;
+      lesson)
+        printf 'pending general lessons need explicit evidence and an enforcing check; the queue was retained.\n' >&2
+        return 1
+        ;;
+    esac
+  done <<< "$pending_contents"
+  if [[ "$has_correction" == true ]]; then
+    friction_prepare_target "$ROOT_DIR/docs/lessons.md" || return 1
+  fi
+}
+
+friction_import_pending() {
+  local pending="$1" pending_line pending_contents entry date area symptom cause fix status grep_status
+  friction_validate_pending "$pending" || return 1
+  [[ -e "$pending" || -L "$pending" ]] || return 0
+  if ! pending_contents="$(cat "$pending")"; then
+    printf 'cannot read pending friction entries; the queue was retained.\n' >&2
+    return 1
+  fi
+  friction_initialize_log || return 1
+  while IFS= read -r pending_line || [[ -n "$pending_line" ]]; do
+    [[ -n "$pending_line" ]] || continue
+    entry="$(sanitize_summary "$pending_line")"
+    IFS='|' read -r date area symptom cause fix status <<<"$entry"
+    date="$(printf '%s' "$date" | sed -E 's/^[[:space:]]*-[[:space:]]*//; s/[[:space:]]+$//')"
+    area="$(printf '%s' "$area" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+    symptom="$(printf '%s' "$symptom" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+    cause="$(printf '%s' "$cause" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+    fix="$(printf '%s' "$fix" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+    status="$(printf '%s' "$status" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+    if [[ "$status" == correction ]]; then
+      append_curated_lesson "$area" "$symptom" "$cause" "$fix" '' correction "$date" || return 1
+      [[ "$curated_lesson_added" == true ]] && lessons_curated=$((lessons_curated + 1))
+    fi
+    if grep -Fqx -- "$entry" "$friction_log"; then
+      continue
+    else
+      grep_status=$?
+      if (( grep_status != 1 )); then
+        printf 'cannot read friction log while importing pending entries: %s\n' "$friction_log" >&2
+        return 1
+      fi
+    fi
+    friction_prepare_target "$friction_log" || return 1
+    if ! printf '%s\n' "$entry" >> "$friction_log"; then
+      printf 'cannot import pending friction entry: %s\n' "$friction_log" >&2
+      return 1
+    fi
+    friction_added=$((friction_added + 1))
+  done <<< "$pending_contents"
+  friction_prepare_target "$pending" || return 1
+  if ! : > "$pending"; then
+    printf 'cannot clear processed pending friction entries: %s\n' "$pending" >&2
+    return 1
   fi
 }
 
@@ -465,7 +683,7 @@ friction_command() {
     esac
   done
   if [[ ${#positional[@]} -ne 4 ]]; then
-    printf 'usage: ./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|lesson] [--check <script-or-none-reason>]\n' >&2
+    printf 'usage: ./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|correction|lesson] [--check <script-or-none-reason>]\n' >&2
     return 2
   fi
   friction_append "${positional[0]}" "${positional[1]}" "${positional[2]}" "${positional[3]}" "$status" "$check" || return $?
@@ -485,15 +703,14 @@ learn_command() {
       *) printf 'unknown learn option: %s\n' "$1" >&2; exit 2 ;;
     esac
   done
-  local entries area count total state first=true proposal evidence today
+  local entries area count state first=true proposal evidence today
   entries="$(friction_entries)"
   today="$(date +%F)"
   local out=''
   local drafted=0 watching=0
   while IFS= read -r area; do
     [[ -n "$area" ]] || continue
-    count="$(printf '%s\n' "$entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson"' | wc -l | tr -d ' ')"
-    total="$(printf '%s\n' "$entries" | awk -F' [|] ' -v a="$area" '$2 == a' | wc -l | tr -d ' ')"
+    count="$(printf '%s\n' "$entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson" && $6 != "correction"' | wc -l | tr -d ' ')"
     (( count > 0 )) || continue
     if (( count >= 2 )); then
       state=exists
@@ -503,7 +720,7 @@ learn_command() {
       done
       if [[ -z "$proposal" ]]; then
         proposal="$ROOT_DIR/docs/state/proposals/$today-$area.md"
-        evidence="$(printf '%s\n' "$entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson"')"
+        evidence="$(printf '%s\n' "$entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson" && $6 != "correction"')"
         mkdir -p "$ROOT_DIR/docs/state/proposals"
         {
           printf '# Proposal: lesson for %s\n\nStatus: proposed\n\n' "$area"
@@ -977,6 +1194,9 @@ finish_session() {
   local f_area f_symptom f_cause f_fix f_status f_check pending="$ROOT_DIR/.agent-state/friction-pending.md" pending_line
   local pass
   for pass in validate append; do
+    if [[ "$pass" == validate ]]; then
+      friction_validate_pending "$pending" || return 1
+    fi
     while IFS= read -r pending_line; do
       [[ -n "$pending_line" ]] || continue
       IFS='|' read -r f_area f_symptom f_cause f_fix f_status f_check extra <<<"$pending_line"
@@ -991,28 +1211,26 @@ finish_session() {
       f_fix="$(printf '%s' "$f_fix" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
       f_check="$(printf '%s' "${f_check:-}" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
       if [[ "$pass" == validate ]]; then
-        friction_validate "$f_area" "$f_status" "$f_check" || return 2
+        friction_validate "$f_area" "$f_status" "$f_check" "$f_cause" || return 2
+        friction_prepare_target "$friction_log" || return 1
+        if [[ "$f_status" == lesson || "$f_status" == correction ]]; then
+          friction_prepare_target "$ROOT_DIR/docs/lessons.md" || return 1
+          friction_verify_lesson_check "$f_check" || return $?
+        fi
         continue
       fi
-      if ! friction_append "$f_area" "$f_symptom" "$f_cause" "$f_fix" "$f_status" "$f_check"; then
+      if ! friction_append "$f_area" "$f_symptom" "$f_cause" "$f_fix" "$f_status" "$f_check" true; then
         return 1
       fi
       friction_added=$((friction_added + 1))
-      [[ "$f_status" == lesson ]] && lessons_curated=$((lessons_curated + 1))
+      if [[ ( "$f_status" == lesson || "$f_status" == correction ) && "$curated_lesson_added" == true ]]; then
+        lessons_curated=$((lessons_curated + 1))
+      fi
     done <<EOF2
 $friction_flags
 EOF2
   done
-  if [[ -f "$pending" ]]; then
-    while IFS= read -r pending_line; do
-      if [[ "$pending_line" =~ $friction_line_pattern ]]; then
-        sanitize_summary "$pending_line" >> "$friction_log"
-        printf '\n' >> "$friction_log"
-        friction_added=$((friction_added + 1))
-      fi
-    done < "$pending"
-    : > "$pending"
-  fi
+  friction_import_pending "$pending" || return 1
   local learning_json proposals_drafted learning_outcome retro_month retro_path='' retro_json=null
   learning_json="$(learn_command --json)"
   proposals_drafted="$(printf '%s' "$learning_json" | sed -n 's/.*"proposalsDrafted":\([0-9][0-9]*\).*/\1/p')"
@@ -1187,15 +1405,15 @@ retro_command() {
   f_total="$(count_lines "$month_entries")"
   f_open="$(count_lines "$(printf '%s\n' "$month_entries" | grep -E '\| open$' || true)")"
   f_fixed="$(count_lines "$(printf '%s\n' "$month_entries" | grep -E '\| fixed$' || true)")"
-  f_lesson="$(count_lines "$(printf '%s\n' "$month_entries" | grep -E '\| lesson$' || true)")"
+  f_lesson="$(count_lines "$(printf '%s\n' "$month_entries" | grep -E '\| (lesson|correction)$' || true)")"
 
   local repeated="" area count rest
   while read -r count area; do
     [[ -n "${area:-}" ]] || continue
     (( count >= 2 )) || continue
-    rest="$(printf '%s\n' "$month_entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson" { print $3; exit }')"
+    rest="$(printf '%s\n' "$month_entries" | awk -F' [|] ' -v a="$area" '$2 == a && $6 != "lesson" && $6 != "correction" { print $3; exit }')"
     repeated="${repeated}${area}"$'\t'"$count entries, for example: ${rest}"$'\n'
-  done < <(printf '%s\n' "$month_entries" | awk -F' [|] ' '$6 != "lesson" && $2 != "" { c[$2]++ } END { for (a in c) print c[a], a }' | sort -k1,1nr -k2,2)
+  done < <(printf '%s\n' "$month_entries" | awk -F' [|] ' '$6 != "lesson" && $6 != "correction" && $2 != "" { c[$2]++ } END { for (a in c) print c[a], a }' | sort -k1,1nr -k2,2)
   repeated="${repeated%$'\n'}"
   local repeated_count
   repeated_count="$(count_lines "$repeated")"

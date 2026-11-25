@@ -18,14 +18,15 @@ Publish one feature branch and pull request containing the authorized working-tr
 
 - The current changes are the user's requested project work and should be included as a coherent set.
 - The only other open PR is Dependabot PR #1, updating `actions/checkout` to the reviewed v7.0.1 SHA; include that pin across all workflows.
+- The user selected a separate `correction` marker for immediate standing corrections; general `lesson` records require two distinct task snapshots, cited verification, and a passing check or justified no-check reason.
 
 ## Steps
 
 - [x] Fix all independent review findings and add behavior-focused regression coverage.
 - [x] Run the repository checks and review the complete diff for secrets and whitespace.
 - [x] Obtain final merge-ready approval from Astra and Luna xhigh reviewers; resolve and re-review findings until both approve.
-- [ ] Commit and push one feature branch, create the consolidated PR, and wait for all CI checks.
-- [ ] Update the plan, checkpoint, and shared task snapshot.
+- [ ] Commit and push the final feature-branch head to PR #2, confirm hosted CI is green, then close superseded PR #1.
+- [x] Update the plan, checkpoint, and shared task snapshot.
 
 ## Acceptance criteria
 
@@ -41,7 +42,7 @@ bash scripts/check-automation.sh
 ./scripts/project check
 ./scripts/project release-check
 ./scripts/project doctor --json
-bash -n scripts/project scripts/check-automation.sh scripts/check-hardening-fixtures.sh scripts/check-learning.sh scripts/check-secrets.sh
+bash -n scripts/project scripts/learning-evidence.sh scripts/check-automation.sh scripts/check-hardening-fixtures.sh scripts/check-learning.sh scripts/check-secrets.sh
 git diff --check
 ```
 

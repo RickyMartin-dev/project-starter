@@ -30,8 +30,9 @@ At the end of a meaningful session, the agent runs:
 This command:
 
 - records a sanitized learning review in the ignored checkpoint and durable snapshot;
+- imports validated pending friction records through the same guarded write path; malformed entries and legacy general lessons stay queued for review;
 - groups repeated friction into proposals;
-- records an explicitly marked standing user correction as a lesson, or a general lesson supported by two independent task records and successful relevant verification;
+- records an explicitly marked `correction` immediately, or a general `lesson` only after two distinct task snapshots and successful verification; general lessons run their enforcing check before recording;
 - creates the missing retrospective for the previous calendar month when that month has project records;
 - runs the starter and release checks;
 - creates an automatic compaction snapshot under `docs/compactions/`;
@@ -39,7 +40,7 @@ This command:
 - records only sanitized, repository-local facts;
 - leaves all policy, credential, permission, and external-side-effect decisions reviewable.
 
-Each start also creates `.agent-state/second-brain-checkpoint.md`, an ignored local note for the active task. Keep it current at meaningful milestones so a compaction hook can preserve the latest project context without reading or copying the agent transcript. Explicit standing user corrections may become lessons immediately. General lessons require two independent substantive task occurrences, cited task records, and successful relevant verification; provide an enforcing check or a written reason none can be added. Automatic grouping drafts proposals but does not itself curate lessons. No-op is valid.
+Each start also creates `.agent-state/second-brain-checkpoint.md`, an ignored local note for the active task. Keep it current at meaningful milestones so a compaction hook can preserve the latest project context without reading or copying the agent transcript. Explicit standing user corrections use the `correction` marker and may become lessons immediately. General `lesson` records require two distinct existing task snapshots, cited successful verification, and an enforcing check that passes before recording, or a written reason none can be added. Automatic grouping drafts proposals but does not itself curate lessons. No-op is valid.
 
 Automatic snapshots use the checkpoint's `Open work and next action` entry. If it is missing or still a template placeholder, the snapshot points the next agent to review active plans and upgrade suggestions.
 

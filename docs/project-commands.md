@@ -45,7 +45,7 @@ With `--task`, `start` also retrieves up to five lexical matches from core orien
 ./scripts/project suggest-upgrades [--json]   # ranked by friction, failures, unchecked lessons, stale research
 
 # Learning loop
-./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|lesson] [--check <script-or-none-reason>]
+./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|correction|lesson] [--check <script-or-none-reason>]
 ./scripts/project finish --summary "<outcome>" --friction "<area>|<symptom>|<cause>|<fix[|status[|check]]>"
 ./scripts/project learn [--json]          # drafts proposals for areas with 2+ entries
 ./scripts/project retro [YYYY-MM] [--html] [--force] [--json]
@@ -83,6 +83,6 @@ The starter gates do not install dependencies, start services, call hosted scann
 - Specialist role cards: `agents/`.
 - Visual review surfaces: `.lavish/`.
 
-At finish, friction is grouped automatically and a missing retrospective is created for the previous calendar month when records exist. Mark `lesson` for an explicit standing user correction, or for a general procedure after two independent substantive task occurrences and successful relevant verification. Cite distinct task records and verification in the cause field; for a general lesson, pass its enforcing check as the sixth friction field. Every lesson carries an enforcing check or a written reason none can be added.
+At finish, friction is grouped automatically and a missing retrospective is created for the previous calendar month when records exist. Mark `correction` for an explicit standing user correction. General `lesson` records require two distinct existing `docs/compactions/*.md` task snapshots and a `verification passed: <check>` citation in the cause, plus an enforcing script under `scripts/` in the sixth friction field. Finish runs that script before writing the lesson. When no mechanical check can be added, use a justified `none: ...` reason and still cite successful verification.
 
 These commands create reviewable Markdown and local repository state. They do not search raw transcripts, send project memory to an external service, train a model, or grant a generated specialist authority.

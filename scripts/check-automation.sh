@@ -121,7 +121,7 @@ mkdir -p \
   "$project_fixture/docs/research" \
   "$project_fixture/agents/specialists" \
   "$project_fixture/.githooks"
-cp -p scripts/project scripts/snapshot-next-action.sh "$project_fixture/scripts/"
+cp -p scripts/project scripts/snapshot-next-action.sh scripts/learning-evidence.sh "$project_fixture/scripts/"
 cp docs/templates/plan.md "$project_fixture/docs/templates/plan.md"
 cat > "$project_fixture/scripts/check-starter.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -415,20 +415,25 @@ fi
 friction_fixture="$fixture_dir/friction-project"
 mkdir -p "$friction_fixture/docs/state/proposals" "$friction_fixture/docs/compactions" "$friction_fixture/prompts"
 mkdir -p "$friction_fixture/scripts"
-cp -p scripts/project scripts/snapshot-next-action.sh scripts/check-learning.sh scripts/archive_snapshot.py "$friction_fixture/scripts/"
+cp -p scripts/project scripts/snapshot-next-action.sh scripts/learning-evidence.sh scripts/check-learning.sh scripts/archive_snapshot.py "$friction_fixture/scripts/"
 for stub in check-starter.sh check-release.sh; do
   printf '#!/usr/bin/env bash\nexit 0\n' > "$friction_fixture/scripts/$stub"
   chmod +x "$friction_fixture/scripts/$stub"
 done
 cp docs/state/proposals/README.md "$friction_fixture/docs/state/proposals/README.md"
+cp docs/compactions/README.md "$friction_fixture/docs/compactions/README.md"
 cp prompts/promote.md "$friction_fixture/prompts/promote.md"
 printf '# Task A\nIndependent occurrence.\n' > "$friction_fixture/docs/compactions/2026-01-01-a.md"
 printf '# Task B\nIndependent occurrence.\n' > "$friction_fixture/docs/compactions/2026-01-02-b.md"
+ln "$friction_fixture/docs/compactions/2026-01-01-a.md" "$friction_fixture/docs/compactions/2026-01-01-alias.md"
+if [[ ! -e "$friction_fixture/docs/compactions/readme.md" ]]; then
+  ln "$friction_fixture/docs/compactions/README.md" "$friction_fixture/docs/compactions/readme.md"
+fi
 printf '# Lessons\n\n## Log\n\n- `YYYY-MM-DD — replace this example with the first durable lesson — x`\n' > "$friction_fixture/docs/lessons.md"
 friction_project() {
   (cd "$friction_fixture" && GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" ./scripts/project "$@")
 }
-friction_pattern='^- [0-9]{4}-[0-9]{2}-[0-9]{2} \| [a-z0-9][a-z0-9-]* \| [^|]+ \| [^|]+ \| [^|]+ \| (open|fixed|lesson)$'
+friction_pattern='^- [0-9]{4}-[0-9]{2}-[0-9]{2} \| [a-z0-9][a-z0-9-]* \| [^|]+ \| [^|]+ \| [^|]+ \| (open|fixed|correction|lesson)$'
 friction_project friction 'Alpha Area' 'sym | with pipe' 'cause' 'fix' >/dev/null
 last_friction="$(tail -n 1 "$friction_fixture/docs/state/friction.md")"
 if [[ ! "$last_friction" =~ $friction_pattern ]] || [[ "$last_friction" == *'sym |'* ]] || [[ "$last_friction" != *'| alpha-area |'* ]]; then
@@ -440,19 +445,246 @@ if friction_project friction 'a' 's' 'c' 'f' --status bogus >/dev/null 2>&1; the
   failures=$((failures + 1))
 fi
 friction_count_before_bad_check="$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')"
-if friction_project friction 'bad-check' 's' 'c' 'f' --status lesson --check 'none:' >/dev/null 2>&1; then
+valid_lesson_evidence='task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/check-learning.sh'
+if friction_project friction 'bad-check' 's' "$valid_lesson_evidence" 'f' --status lesson --check 'none:' >/dev/null 2>&1; then
   printf 'CLI friction accepted an empty written reason for a lesson check.\n' >&2
+  failures=$((failures + 1))
+fi
+if friction_project friction 'missing-evidence' 's' 'one task docs/compactions/2026-01-01-a.md; verification passed: scripts/check-learning.sh' 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction accepted a general lesson with only one task record.\n' >&2
+  failures=$((failures + 1))
+fi
+if friction_project friction 'duplicate-evidence' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-01-a.md; verification passed: scripts/check-learning.sh' 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction accepted the same task record twice as independent evidence.\n' >&2
+  failures=$((failures + 1))
+fi
+if friction_project friction 'same-file-alias' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-01-alias.md; verification passed: scripts/check-learning.sh' 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction accepted two names for the same task snapshot as independent evidence.\n' >&2
+  failures=$((failures + 1))
+fi
+if friction_project friction 'index-is-not-a-task' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/readme.md; verification passed: scripts/check-learning.sh' 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction accepted the compactions README as a task snapshot.\n' >&2
+  failures=$((failures + 1))
+fi
+if friction_project friction 'missing-verification' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md' 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction accepted a general lesson without successful verification evidence.\n' >&2
+  failures=$((failures + 1))
+fi
+if friction_project friction 'missing-check' 's' "$valid_lesson_evidence" 'f' --status lesson >/dev/null 2>&1; then
+  printf 'CLI friction accepted a general lesson without an enforcing check or none reason.\n' >&2
+  failures=$((failures + 1))
+fi
+printf '#!/usr/bin/env bash\nexit 1\n' > "$friction_fixture/scripts/failing-check.sh"
+chmod +x "$friction_fixture/scripts/failing-check.sh"
+if friction_project friction 'failed-verification' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/failing-check.sh' 'f' --status lesson --check 'scripts/failing-check.sh' >/dev/null 2>&1; then
+  printf 'CLI friction recorded a general lesson when its enforcing check failed.\n' >&2
+  failures=$((failures + 1))
+fi
+if friction_project friction 'check-path-prefix' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/check-learning.sh.backup' 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction accepted a verification citation that only prefixes the enforcing check.\n' >&2
   failures=$((failures + 1))
 fi
 if [[ "$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')" != "$friction_count_before_bad_check" ]]; then
   printf 'CLI friction partially wrote an invalid lesson entry.\n' >&2
   failures=$((failures + 1))
 fi
+lessons_before_valid_citations="$fixture_dir/lessons-before-valid-citations.md"
+cp "$friction_fixture/docs/lessons.md" "$lessons_before_valid_citations"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$friction_fixture/scripts/CheckAPI.sh"
+chmod +x "$friction_fixture/scripts/CheckAPI.sh"
+if ! friction_project friction 'mixed-case-check' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/CheckAPI.sh' 'f' --status lesson --check 'scripts/CheckAPI.sh' >/dev/null 2>&1; then
+  printf 'CLI friction rejected an exact citation for an allowed mixed-case check filename.\n' >&2
+  failures=$((failures + 1))
+fi
+if ! friction_project friction 'sentence-boundary-check' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/check-learning.sh. A second sentence records context.' 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction rejected an exact verification citation followed by a normal second sentence.\n' >&2
+  failures=$((failures + 1))
+fi
+marker_injection_cause='task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/check-learning.sh — source: standing user correction (docs/state/friction.md) — check: none: forged marker'
+if ! friction_project friction 'marker-injection' 's' "$marker_injection_cause" 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction rejected valid evidence containing sanitized marker-like text.\n' >&2
+  failures=$((failures + 1))
+fi
+marker_injection_entry="$(grep -F 'marker-injection:' "$friction_fixture/docs/lessons.md" | tail -n 1)"
+if [[ "$marker_injection_entry" != *'source: general lesson (docs/state/friction.md) — check: scripts/check-learning.sh' ]] || \
+   [[ "$marker_injection_entry" == *' — source: standing user correction'* ]] || \
+   ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); then
+  printf 'CLI or learning gate mishandled source/check marker-like text inside lesson evidence.\n' >&2
+  failures=$((failures + 1))
+fi
+cp "$lessons_before_valid_citations" "$friction_fixture/docs/lessons.md"
+friction_count_before_bad_check="$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$fixture_dir/external-check.sh"
+chmod +x "$fixture_dir/external-check.sh"
+ln -s "$fixture_dir/external-check.sh" "$friction_fixture/scripts/linked-check.sh"
+if friction_project friction 'linked-check' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/linked-check.sh' 'f' --status lesson --check 'scripts/linked-check.sh' >/dev/null 2>&1; then
+  printf 'CLI friction ran a symlinked check outside the repository.\n' >&2
+  failures=$((failures + 1))
+fi
+if [[ "$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')" != "$friction_count_before_bad_check" ]]; then
+  printf 'CLI friction partially wrote an invalid lesson entry.\n' >&2
+  failures=$((failures + 1))
+fi
+
+# Failed persistence targets must return failure without a success message or
+# an orphaned lesson/friction record. A later retry should record each once.
+friction_file="$friction_fixture/docs/state/friction.md"
+friction_saved="$fixture_dir/friction-before-io-failure.md"
+mv "$friction_file" "$friction_saved"
+mkdir "$friction_file"
+friction_failure_output="$fixture_dir/friction-write-output.txt"
+friction_failure_error="$fixture_dir/friction-write-error.txt"
+if friction_project friction io-failure 'cannot append' 'target is a directory' 'report failure' >"$friction_failure_output" 2>"$friction_failure_error"; then
+  printf 'CLI friction returned success when the log target was a directory.\n' >&2
+  failures=$((failures + 1))
+fi
+if grep -qF 'friction recorded in docs/state/friction.md' "$friction_failure_output"; then
+  printf 'CLI friction printed a success message after its log write failed.\n' >&2
+  failures=$((failures + 1))
+fi
+rmdir "$friction_file"
+mv "$friction_saved" "$friction_file"
+
+# Friction persistence must reject symlinked file targets and parent directories
+# instead of following them out of the repository.
+external_friction="$fixture_dir/external-friction.md"
+printf 'external friction sentinel\n' > "$external_friction"
+friction_saved="$fixture_dir/friction-before-symlink.md"
+mv "$friction_file" "$friction_saved"
+ln -s "$external_friction" "$friction_file"
+if friction_project friction symlinked-log 'must stay local' 'outside sentinel' 'reject the target' >"$friction_failure_output" 2>"$friction_failure_error"; then
+  printf 'CLI friction followed a symlinked log target outside the repository.\n' >&2
+  failures=$((failures + 1))
+fi
+if grep -qF 'friction recorded in docs/state/friction.md' "$friction_failure_output" || \
+   [[ "$(cat "$external_friction")" != 'external friction sentinel' ]]; then
+  printf 'CLI friction reported success or changed the external symlink target.\n' >&2
+  failures=$((failures + 1))
+fi
+rm "$friction_file"
+mv "$friction_saved" "$friction_file"
+
+external_state="$fixture_dir/external-state"
+state_saved="$fixture_dir/state-before-symlink"
+mkdir -p "$external_state"
+printf '# External friction sentinel\n' > "$external_state/friction.md"
+mv "$friction_fixture/docs/state" "$state_saved"
+ln -s "$external_state" "$friction_fixture/docs/state"
+if friction_project friction symlinked-parent 'must stay local' 'outside sentinel' 'reject the parent' >"$friction_failure_output" 2>"$friction_failure_error"; then
+  printf 'CLI friction followed a symlinked parent directory outside the repository.\n' >&2
+  failures=$((failures + 1))
+fi
+if grep -qF 'friction recorded in docs/state/friction.md' "$friction_failure_output" || \
+   [[ "$(cat "$external_state/friction.md")" != '# External friction sentinel' ]]; then
+  printf 'CLI friction reported success or changed a symlinked parent target.\n' >&2
+  failures=$((failures + 1))
+fi
+rm "$friction_fixture/docs/state"
+mv "$state_saved" "$friction_fixture/docs/state"
+
+lessons_file="$friction_fixture/docs/lessons.md"
+lessons_saved="$fixture_dir/lessons-before-io-failure.md"
+mv "$lessons_file" "$lessons_saved"
+mkdir "$lessons_file"
+friction_count_before_lesson_io="$(awk 'index($0, " | retryable-lesson |") { count++ } END { print count + 0 }' "$friction_file")"
+for retry in 1 2; do
+  if friction_project friction retryable-lesson 'same symptom' "$valid_lesson_evidence" 'write once' --status lesson --check 'scripts/check-learning.sh' >"$friction_failure_output" 2>"$friction_failure_error"; then
+    printf 'CLI friction returned success when the lesson target was a directory.\n' >&2
+    failures=$((failures + 1))
+  fi
+  if grep -qF 'friction recorded in docs/state/friction.md' "$friction_failure_output"; then
+    printf 'CLI friction printed success after curated lesson persistence failed.\n' >&2
+    failures=$((failures + 1))
+  fi
+done
+friction_count_after_lesson_io="$(awk 'index($0, " | retryable-lesson |") { count++ } END { print count + 0 }' "$friction_file")"
+if [[ "$friction_count_after_lesson_io" != "$friction_count_before_lesson_io" ]]; then
+  printf 'failed lesson persistence left friction rows that would duplicate on retry.\n' >&2
+  failures=$((failures + 1))
+fi
+rmdir "$lessons_file"
+mv "$lessons_saved" "$lessons_file"
+
+external_lessons="$fixture_dir/external-lessons.md"
+printf '# External lessons sentinel\n' > "$external_lessons"
+lessons_saved="$fixture_dir/lessons-before-symlink.md"
+mv "$lessons_file" "$lessons_saved"
+ln -s "$external_lessons" "$lessons_file"
+friction_count_before_lessons_symlink="$(wc -l < "$friction_file" | tr -d ' ')"
+if friction_project friction symlinked-lessons 'must stay local' 'explicit correction' 'reject the target' --status correction >"$friction_failure_output" 2>"$friction_failure_error"; then
+  printf 'CLI friction followed a symlinked lessons target outside the repository.\n' >&2
+  failures=$((failures + 1))
+fi
+if grep -qF 'friction recorded in docs/state/friction.md' "$friction_failure_output" || \
+   [[ "$(cat "$external_lessons")" != '# External lessons sentinel' ]] || \
+   [[ "$(wc -l < "$friction_file" | tr -d ' ')" != "$friction_count_before_lessons_symlink" ]]; then
+  printf 'CLI friction reported success, changed the external lessons target, or left a friction row after lesson rejection.\n' >&2
+  failures=$((failures + 1))
+fi
+rm "$lessons_file"
+mv "$lessons_saved" "$lessons_file"
+
+lessons_before_retry="$fixture_dir/lessons-before-retry.md"
+cp "$lessons_file" "$lessons_before_retry"
+if ! friction_project friction retryable-lesson 'same symptom' "$valid_lesson_evidence" 'write once' --status lesson --check 'scripts/check-learning.sh' >/dev/null; then
+  printf 'CLI friction retry failed after the lesson target recovered.\n' >&2
+  failures=$((failures + 1))
+fi
+retryable_friction_count="$(awk 'index($0, " | retryable-lesson |") { count++ } END { print count + 0 }' "$friction_file")"
+retryable_lesson_count="$(awk 'index($0, "retryable-lesson: same symptom") { count++ } END { print count + 0 }' "$lessons_file")"
+if [[ "$retryable_friction_count" != 1 || "$retryable_lesson_count" != 1 ]]; then
+  printf 'successful friction retry did not persist exactly one friction row and one lesson.\n' >&2
+  failures=$((failures + 1))
+fi
+cp "$lessons_before_retry" "$lessons_file"
+
+# A justified no-check reason is allowed for general lessons when the distinct
+# task evidence and successful verification are still present.
+friction_before_none="$fixture_dir/friction-before-none-check.md"
+lessons_before_none="$fixture_dir/lessons-before-none-check.md"
+cp "$friction_file" "$friction_before_none"
+cp "$lessons_file" "$lessons_before_none"
+if ! friction_project friction manual-general 'same reviewed rule' \
+  'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: manual review against both task snapshots' \
+  'document the reviewed rule' --status lesson --check 'none: semantic review has no deterministic assertion' >/dev/null; then
+  printf 'CLI friction rejected a justified no-check general lesson.\n' >&2
+  failures=$((failures + 1))
+elif ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); then
+  printf 'learning gate rejected a valid general lesson with a justified no-check reason.\n' >&2
+  failures=$((failures + 1))
+fi
+cp "$friction_before_none" "$friction_file"
+cp "$lessons_before_none" "$lessons_file"
+
+# finish validates every destination before appending its first batch row.
+finish_open_area='batch-open-before-lesson'
+finish_lesson_area='batch-lesson-target-failure'
+for retry in 1 2; do
+  mv "$lessons_file" "$fixture_dir/lessons-before-finish-io.md"
+  mkdir "$lessons_file"
+  if PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'batch write fixture' \
+    --friction "$finish_open_area|first row|batch validation|do not partially write" \
+    --friction "$finish_lesson_area|second row|$valid_lesson_evidence|write atomically|lesson|scripts/check-learning.sh" \
+    >/dev/null 2>"$friction_failure_error"; then
+    printf 'CLI finish returned success with an invalid lesson destination.\n' >&2
+    failures=$((failures + 1))
+  fi
+  rmdir "$lessons_file"
+  mv "$fixture_dir/lessons-before-finish-io.md" "$lessons_file"
+done
+finish_open_count="$(awk -v a="$finish_open_area" 'index($0, " | " a " |") { count++ } END { print count + 0 }' "$friction_file")"
+finish_lesson_count="$(awk -v a="$finish_lesson_area" 'index($0, " | " a " |") { count++ } END { print count + 0 }' "$friction_file")"
+if [[ "$finish_open_count" != 0 || "$finish_lesson_count" != 0 ]]; then
+  printf 'failed finish batch wrote earlier friction rows before rejecting a lesson destination.\n' >&2
+  failures=$((failures + 1))
+fi
+
+friction_count_before_bad_finish="$(wc -l < "$friction_file" | tr -d ' ')"
 if PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'bad friction' --friction 'gamma-area|s|c|f' --friction 'delta-area|s|c|f|bogus' >/dev/null 2>&1; then
   printf 'CLI finish accepted an invalid friction status.\n' >&2
   failures=$((failures + 1))
 fi
-if [[ "$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')" != "$friction_count_before_bad_check" ]]; then
+if [[ "$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')" != "$friction_count_before_bad_finish" ]]; then
   printf 'CLI finish wrote earlier friction entries before rejecting a later invalid one.\n' >&2
   failures=$((failures + 1))
 fi
@@ -478,6 +710,149 @@ if ! grep -qF '"proposalsDrafted":1' <<<"$finish_friction_output" || \
   printf 'CLI finish did not automatically group repeated friction into a learning record.\n' >&2
   failures=$((failures + 1))
 fi
+
+# Pending friction imports use the same guarded, retry-safe persistence path.
+pending_file="$friction_fixture/.agent-state/friction-pending.md"
+mkdir -p "$friction_fixture/.agent-state"
+pending_open_entry='- 2026-11-24 | pending-open | saved local friction | verified pending import | retain the record | open'
+printf '%s\n' "$pending_open_entry" > "$pending_file"
+if ! PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'pending friction import fixture' >/dev/null; then
+  printf 'CLI finish failed to import a valid pending friction entry.\n' >&2
+  failures=$((failures + 1))
+fi
+pending_open_count="$(awk 'index($0, " | pending-open |") { count++ } END { print count + 0 }' "$friction_file")"
+if [[ "$pending_open_count" != 1 || -s "$pending_file" ]]; then
+  printf 'CLI finish did not import and clear a valid pending friction entry exactly once.\n' >&2
+  failures=$((failures + 1))
+fi
+printf '%s\n' "$pending_open_entry" > "$pending_file"
+if ! PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'pending friction retry fixture' >/dev/null; then
+  printf 'CLI finish failed while retrying a previously imported pending friction entry.\n' >&2
+  failures=$((failures + 1))
+fi
+pending_open_count="$(awk 'index($0, " | pending-open |") { count++ } END { print count + 0 }' "$friction_file")"
+if [[ "$pending_open_count" != 1 || -s "$pending_file" ]]; then
+  printf 'CLI finish duplicated a pending friction row on retry.\n' >&2
+  failures=$((failures + 1))
+fi
+
+pending_unreadable_entry='- 2026-11-24 | pending-unreadable | preserve queue bytes | read permission required | retain for retry | open'
+printf '%s\n' "$pending_unreadable_entry" > "$pending_file"
+chmod 200 "$pending_file"
+pending_before_reject="$(wc -l < "$friction_file" | tr -d ' ')"
+if PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'unreadable pending fixture' \
+  --friction 'blocked-by-unreadable|must not partially write|preflight unreadable queue|retain the row' >/dev/null 2>&1; then
+  printf 'CLI finish accepted an unreadable pending queue.\n' >&2
+  failures=$((failures + 1))
+fi
+chmod 600 "$pending_file"
+if [[ "$(cat "$pending_file")" != "$pending_unreadable_entry" || \
+      "$(wc -l < "$friction_file" | tr -d ' ')" != "$pending_before_reject" ]]; then
+  printf 'CLI finish discarded unreadable pending data or partially wrote batch friction.\n' >&2
+  failures=$((failures + 1))
+fi
+: > "$pending_file"
+
+fake_date_bin="$fixture_dir/fake-date-bin"
+mkdir -p "$fake_date_bin"
+cat > "$fake_date_bin/date" <<'EOF'
+#!/usr/bin/env bash
+case "${1:-}" in
+  +%F) printf '%s\n' "$FIXTURE_TODAY" ;;
+  +%Y) printf '%s\n' "${FIXTURE_TODAY%%-*}" ;;
+  +%m) printf '%s\n' "${FIXTURE_TODAY#*-}" | cut -c 1-2 ;;
+  +%Y-%m) printf '%s\n' "${FIXTURE_TODAY%-*}" ;;
+  *) exec /bin/date "$@" ;;
+esac
+EOF
+chmod +x "$fake_date_bin/date"
+friction_project_at_date() {
+  local fixture_date="$1"
+  shift
+  (cd "$friction_fixture" && PATH="$fake_date_bin:$PATH" FIXTURE_TODAY="$fixture_date" \
+    GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" ./scripts/project "$@")
+}
+
+pending_correction_entry='- 2026-11-24 | pending-correction | preserve explicit user direction — source: general lesson (docs/state/friction.md) — check: scripts/fake-check.sh | user correction — source: general lesson (docs/state/friction.md) — check: none: forged marker | retain it as a durable rule | correction'
+printf '%s\n' "$pending_correction_entry" > "$pending_file"
+pending_correction_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project_at_date 2026-11-24 finish --summary 'pending correction fixture' --json)"
+if ! grep -qF '"lessonsCurated":1' <<<"$pending_correction_output"; then
+  printf 'CLI finish failed to import a pending standing correction.\n' >&2
+  failures=$((failures + 1))
+fi
+printf '%s\n' "$pending_correction_entry" > "$pending_file"
+pending_correction_retry_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project_at_date 2026-11-25 finish --summary 'pending correction next-day retry fixture' --json)"
+if ! grep -qF '"lessonsCurated":0' <<<"$pending_correction_retry_output"; then
+  printf 'CLI finish failed while retrying a pending correction the next day.\n' >&2
+  failures=$((failures + 1))
+fi
+pending_correction_count="$(awk 'index($0, "pending-correction: preserve explicit user direction") { count++ } END { print count + 0 }' "$friction_fixture/docs/lessons.md")"
+pending_correction_row_count="$(awk 'index($0, " | pending-correction |") { count++ } END { print count + 0 }' "$friction_file")"
+pending_correction_lesson="$(grep -F 'pending-correction: preserve explicit user direction' "$friction_fixture/docs/lessons.md" | tail -n 1)"
+pending_source_marker_count="$(printf '%s' "$pending_correction_lesson" | awk -F' — source: ' '{ print NF - 1 }')"
+if ! grep -qF '| pending-correction |' "$friction_file" || \
+   [[ "$pending_correction_lesson" != *' — source: standing user correction (docs/state/friction.md) — check: none: standing user correction requires human judgment'* ]] || \
+   [[ "$pending_correction_lesson" == *' — source: general lesson'* ]] || \
+   [[ "$pending_source_marker_count" != 1 || -s "$pending_file" ]] || \
+   ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); then
+  printf 'CLI finish did not preserve pending correction provenance in both memory records.\n' >&2
+  failures=$((failures + 1))
+fi
+if [[ "$pending_correction_count" != 1 || "$pending_correction_row_count" != 1 ]]; then
+  printf 'CLI finish did not deduplicate a pending correction across a next-day retry.\n' >&2
+  failures=$((failures + 1))
+fi
+
+pending_lesson_entry='- 2026-11-24 | pending-legacy-lesson | lacks structured evidence | legacy pending item | keep for review | lesson'
+printf '%s\n' "$pending_lesson_entry" > "$pending_file"
+pending_before_reject="$(wc -l < "$friction_file" | tr -d ' ')"
+if PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'unsupported pending lesson fixture' >/dev/null 2>&1; then
+  printf 'CLI finish accepted a pending general lesson without its check evidence.\n' >&2
+  failures=$((failures + 1))
+fi
+if [[ "$(cat "$pending_file")" != "$pending_lesson_entry" || \
+      "$(wc -l < "$friction_file" | tr -d ' ')" != "$pending_before_reject" ]]; then
+  printf 'CLI finish discarded or partially imported an unsupported pending lesson.\n' >&2
+  failures=$((failures + 1))
+fi
+: > "$pending_file"
+
+external_pending="$fixture_dir/external-pending.md"
+printf 'external pending sentinel\n' > "$external_pending"
+pending_saved="$fixture_dir/pending-before-symlink.md"
+mv "$pending_file" "$pending_saved"
+ln -s "$external_pending" "$pending_file"
+pending_before_reject="$(wc -l < "$friction_file" | tr -d ' ')"
+if PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'symlinked pending fixture' \
+  --friction 'blocked-by-pending|must not partially write|preflight symlink|retain the row' >/dev/null 2>&1; then
+  printf 'CLI finish accepted a symlinked pending queue.\n' >&2
+  failures=$((failures + 1))
+fi
+if [[ "$(cat "$external_pending")" != 'external pending sentinel' || \
+      "$(wc -l < "$friction_file" | tr -d ' ')" != "$pending_before_reject" ]]; then
+  printf 'CLI finish changed an external pending target or wrote batch friction before rejecting it.\n' >&2
+  failures=$((failures + 1))
+fi
+rm "$pending_file"
+mv "$pending_saved" "$pending_file"
+
+state_saved="$fixture_dir/state-before-pending-symlink"
+external_pending_state="$fixture_dir/external-pending-state"
+mkdir -p "$external_pending_state"
+printf 'external parent sentinel\n' > "$external_pending_state/friction-pending.md"
+mv "$friction_fixture/.agent-state" "$state_saved"
+ln -s "$external_pending_state" "$friction_fixture/.agent-state"
+if PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'symlinked pending parent fixture' >/dev/null 2>&1; then
+  printf 'CLI finish accepted a symlinked pending parent directory.\n' >&2
+  failures=$((failures + 1))
+fi
+if [[ "$(cat "$external_pending_state/friction-pending.md")" != 'external parent sentinel' ]]; then
+  printf 'CLI finish changed an external pending file through a symlinked parent.\n' >&2
+  failures=$((failures + 1))
+fi
+rm "$friction_fixture/.agent-state"
+mv "$state_saved" "$friction_fixture/.agent-state"
+
 friction_project friction 'alpha-area' 'third symptom' 'cause' 'fix' >/dev/null
 learn_output="$(friction_project learn --json)"
 if ! ls "$friction_fixture"/docs/state/proposals/*-alpha-area.md >/dev/null 2>&1 || \
@@ -495,6 +870,9 @@ if ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); th
   printf 'learning gate failed with no snapshots in the fixture.\n' >&2
   failures=$((failures + 1))
 fi
+lessons_before_snapshot_cap="$fixture_dir/lessons-before-snapshot-cap.md"
+cp "$friction_fixture/docs/lessons.md" "$lessons_before_snapshot_cap"
+printf '# Lessons\n\n## Log\n\n- `YYYY-MM-DD — replace this example with the first durable lesson — x`\n' > "$friction_fixture/docs/lessons.md"
 for index in 1 2 3 4 5 6; do
   printf '# Snapshot %s\n' "$index" > "$friction_fixture/docs/compactions/2026-01-0$index-snapshot.md"
 done
@@ -507,17 +885,26 @@ if ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); th
   printf 'learning gate failed even though a dated lesson exists.\n' >&2
   failures=$((failures + 1))
 fi
-standing_finish_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'standing correction fixture' --friction 'standing-correction|preserve the user rule|explicit user correction|record the sanitized rule|lesson' --json)"
+cp "$lessons_before_snapshot_cap" "$friction_fixture/docs/lessons.md"
+standing_finish_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'standing correction fixture' --friction 'standing-correction|preserve the user rule|explicit user correction|record the sanitized rule|correction' --json)"
 if ! grep -qF '"lessonsCurated":1' <<<"$standing_finish_output" || \
    ! grep -qF 'standing-correction' "$friction_fixture/docs/state/friction.md" || \
-   ! grep -qF 'check: none: explicit standing user correction requires semantic judgment' "$friction_fixture/docs/lessons.md"; then
-  printf 'CLI finish did not immediately record an explicit standing correction as a lesson.\n' >&2
+   ! grep -qF '| correction' "$friction_fixture/docs/state/friction.md" || \
+   ! grep -qF 'source: standing user correction' "$friction_fixture/docs/lessons.md" || \
+   ! grep -qF 'check: none: standing user correction requires human judgment' "$friction_fixture/docs/lessons.md"; then
+  printf 'CLI finish did not immediately record an explicit correction through the correction marker.\n' >&2
   failures=$((failures + 1))
 fi
-general_finish_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'verified general lesson fixture' --friction 'verified-general|same workflow issue|independent task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; scripts/check-learning.sh passed|document the verified workflow|lesson|scripts/check-learning.sh' --json)"
+correction_learn_output="$(friction_project learn --json)"
+if grep -qF '"area":"standing-correction"' <<<"$correction_learn_output"; then
+  printf 'CLI learn treated an immediate correction as recurring friction.\n' >&2
+  failures=$((failures + 1))
+fi
+general_finish_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'verified general lesson fixture' --friction 'verified-general|same workflow issue|task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/check-learning.sh|document the verified workflow|lesson|scripts/check-learning.sh' --json)"
 if ! grep -qF '"lessonsCurated":1' <<<"$general_finish_output" || \
+   ! grep -qF 'source: general lesson' "$friction_fixture/docs/lessons.md" || \
    ! grep -qF 'check: scripts/check-learning.sh' "$friction_fixture/docs/lessons.md" || \
-   ! grep -qF 'independent task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md' "$friction_fixture/docs/lessons.md"; then
+   ! grep -qF 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/check-learning.sh' "$friction_fixture/docs/lessons.md"; then
   printf 'CLI finish did not record a verified general lesson with cited evidence and its enforcing check.\n' >&2
   failures=$((failures + 1))
 fi
@@ -526,6 +913,33 @@ if ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); th
   failures=$((failures + 1))
 fi
 cp "$friction_fixture/docs/lessons.md" "$fixture_dir/lessons-valid.md"
+printf -- '- `2026-11-09 — omitted-source: weak lesson — apply: apply safely — evidence: two task records and verification passed — check: scripts/check-learning.sh`\n' >> "$friction_fixture/docs/lessons.md"
+if learning_output="$(cd "$friction_fixture" && ./scripts/check-learning.sh 2>&1)"; then
+  printf 'learning gate accepted a new-format lesson without a source marker.\n' >&2
+  failures=$((failures + 1))
+elif ! grep -qF 'new-format lessons require a recognized source marker' <<<"$learning_output"; then
+  printf 'learning gate rejected a lesson with no source marker for an unexpected reason.\n' >&2
+  failures=$((failures + 1))
+fi
+cp "$fixture_dir/lessons-valid.md" "$friction_fixture/docs/lessons.md"
+printf -- '- `2026-11-09 — weak general lesson — evidence: one task docs/compactions/2026-01-01-a.md and docs/compactions/readme.md; verification passed: scripts/check-learning.sh — source: general lesson (docs/state/friction.md) — check: scripts/check-learning.sh`\n' >> "$friction_fixture/docs/lessons.md"
+if learning_output="$(cd "$friction_fixture" && ./scripts/check-learning.sh 2>&1)"; then
+  printf 'learning gate accepted a general lesson with only one task snapshot.\n' >&2
+  failures=$((failures + 1))
+elif ! grep -qF 'a general lesson needs two distinct existing docs/compactions task records' <<<"$learning_output"; then
+  printf 'learning gate rejected a weak general lesson for an unexpected reason: %s\n' "$learning_output" >&2
+  failures=$((failures + 1))
+fi
+cp "$fixture_dir/lessons-valid.md" "$friction_fixture/docs/lessons.md"
+printf -- '- `2026-11-10 — aliased general lesson — evidence: task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-01-alias.md; verification passed: scripts/check-learning.sh — source: general lesson (docs/state/friction.md) — check: scripts/check-learning.sh`\n' >> "$friction_fixture/docs/lessons.md"
+if learning_output="$(cd "$friction_fixture" && ./scripts/check-learning.sh 2>&1)"; then
+  printf 'learning gate accepted two aliases of the same task snapshot as independent evidence.\n' >&2
+  failures=$((failures + 1))
+elif ! grep -qF 'a general lesson needs two distinct existing docs/compactions task records' <<<"$learning_output"; then
+  printf 'learning gate rejected aliased task evidence for an unexpected reason.\n' >&2
+  failures=$((failures + 1))
+fi
+cp "$fixture_dir/lessons-valid.md" "$friction_fixture/docs/lessons.md"
 printf -- '- `2026-11-09 — empty none reason — evidence — check: none:`\n' >> "$friction_fixture/docs/lessons.md"
 if learning_output="$(cd "$friction_fixture" && ./scripts/check-learning.sh 2>&1)"; then
   printf 'learning gate accepted a bare none: check with no explanation.\n' >&2
@@ -539,7 +953,7 @@ cp "$fixture_dir/lessons-valid.md" "$friction_fixture/docs/lessons.md"
 # Evidence-based suggest-upgrades and retro
 evidence_fixture="$fixture_dir/evidence-project"
 mkdir -p "$evidence_fixture/docs/state/proposals" "$evidence_fixture/docs/compactions" "$evidence_fixture/docs/research" "$evidence_fixture/docs/retrospectives" "$evidence_fixture/.lavish" "$evidence_fixture/scripts"
-cp -p scripts/project scripts/snapshot-next-action.sh "$evidence_fixture/scripts/"
+cp -p scripts/project scripts/snapshot-next-action.sh scripts/learning-evidence.sh "$evidence_fixture/scripts/"
 for stub in check-starter.sh check-release.sh; do
   printf '#!/usr/bin/env bash\nexit 0\n' > "$evidence_fixture/scripts/$stub"
   chmod +x "$evidence_fixture/scripts/$stub"

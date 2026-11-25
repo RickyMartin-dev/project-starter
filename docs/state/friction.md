@@ -1,12 +1,12 @@
 # Friction log
 
-Append-only record of session problems and user corrections. Keep entries sanitized: no secrets, customer data, or transcripts. Add entries with `./scripts/project friction` or `finish --friction`; finish runs the grouping step automatically. Use status `lesson` for an explicit standing correction or a general procedure that meets the evidence and verification criteria in `prompts/learn.md`; lessons are also written to `docs/lessons.md`.
+Append-only record of session problems and user corrections. Keep entries sanitized: no secrets, customer data, or transcripts. Add entries with `./scripts/project friction` or `finish --friction`; finish runs the grouping step automatically. Use status `correction` for an explicit standing correction, or `lesson` for a general procedure that meets the evidence and verification criteria in `prompts/learn.md`; either marker also writes a durable entry to `docs/lessons.md`.
 
 Entry format (one per line, parsed by tools; do not reorder fields):
 
 `- YYYY-MM-DD | <area> | <symptom> | <cause> | <fix> | <status>`
 
-`<area>` is a short kebab-case slug. `<status>` is `open`, `fixed`, or `lesson`. For general lessons, `finish --friction` accepts a sixth field containing the enforcing check; include evidence from two distinct task records and successful verification in the cause. Repeated friction is grouped into proposals, while a lesson requires the evidence and verification rules in `prompts/learn.md`.
+`<area>` is a short kebab-case slug. `<status>` is `open`, `fixed`, `correction`, or `lesson`. A `correction` is an explicit standing user correction and may be recorded immediately. A general `lesson` requires two distinct existing task snapshots, a successful verification citation in its cause, and an enforcing `scripts/*.sh` check or justified `none: ...` reason. Repeated friction is grouped into proposals and does not qualify as a lesson by itself.
 
 ## Log
 
@@ -16,3 +16,4 @@ Entry format (one per line, parsed by tools; do not reorder fields):
 - 2026-11-08 | file-gate | GateGuard pre-write hook blocked first-time file creation six times | user-level ECC hook requires stated facts | retry with stated facts | lesson
 - 2026-11-08 | lavish-ui | clicks on preview controls opened Lavish annotation instead of acting | decorative non-native controls without data-lavish-action | removed fakes, added data-lavish-action to theme buttons | lesson
 - 2026-11-24 | finish-snapshot | snapshot claimed release verification before it ran | finish created and archived the snapshot before running release-check | run both checks before snapshot creation and record their outcomes | fixed
+- 2026-11-25 | pr-readiness | review exposed unsafe pending queue writes and duplicate correction retries | pending imports bypassed destination/read checks and keyed lessons to the current date | preflight and validate queue reads, retain unsupported entries, and deduplicate corrections by source date | fixed

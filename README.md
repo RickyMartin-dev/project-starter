@@ -67,7 +67,7 @@ For an existing clean repository, copy or merge this starter into the repository
 3. Implement: make the smallest coherent change and keep the plan current.
 4. Verify: run the repository's checks plus `./scripts/project check`.
 5. Review: inspect the diff for correctness, security, regressions, and unnecessary complexity.
-6. Learn: at finish, group repeated friction into proposals and record a concise learning outcome. Record an explicit standing user correction directly as a lesson; curate a general lesson only after two independent task occurrences and successful verification, citing both records and an enforcing check or written no-check reason.
+6. Learn: at finish, group repeated friction into proposals and record a concise learning outcome. Mark an explicit standing user correction as `correction` to record it immediately; use `lesson` only after two distinct task snapshots and successful verification, citing both records and an enforcing check or justified no-check reason.
 7. Promote: have the designated reviewer validate a proposal before changing protected shared policy. Lessons need an enforcing check or a written reason none is possible.
 8. Compact: snapshot facts, decisions, evidence, risks, and next actions before context compaction or handoff.
 9. Research: compare fresh external practice and record what to adopt, defer, or reject.
@@ -99,7 +99,7 @@ Keep the shared source of truth in `AGENTS.md` and `docs/`. Native adapter files
 
 Each project keeps its own durable state under `docs/state/`. At task start, `./scripts/project start --task` searches Git commit subjects and selected canonical Markdown, returning up to five sanitized matches; `./scripts/project recall "<query>"` runs a focused search. It excludes raw transcripts, ignored resources, local agent state, and external services.
 
-At finish, the project groups repeated friction into proposals, records the learning review in the checkpoint and task snapshot, and creates a missing retrospective for the previous month when records exist. An explicit standing user correction can be recorded immediately as a lesson. General lessons require two independent task records, successful verification, and an enforcing check or a written reason none can be added. Protected shared policy remains behind reviewer approval. This is repository-local learning, not automatic model retraining or a shared external memory service.
+At finish, the project groups repeated friction into proposals, records the learning review in the checkpoint and task snapshot, and creates a missing retrospective for the previous month when records exist. An explicit standing user correction uses the `correction` marker and can be recorded immediately. General `lesson` records require two distinct existing task snapshots, successful verification, and an enforcing check or a written reason none can be added. Protected shared policy remains behind reviewer approval. This is repository-local learning, not automatic model retraining or a shared external memory service.
 
 ## Research, upgrades, and specialist agents
 

@@ -10,6 +10,7 @@ All notable changes to this starter are recorded here.
 - Capped recall work at 50 skill notes, 450 Markdown history records, and 500 Git subjects while always including core orientation files.
 - Made finish JSON accurately report archive and retrospective state, removed unrun checks from snapshots, fixed month-independent retrospective coverage, and corrected linked-worktree whitespace checks.
 - Updated all repository workflows to the verified `actions/checkout` v7.0.1 commit used by the Dependabot PR.
+- Separated immediate standing corrections from general lessons; general lessons now require two distinct existing task snapshots, cited successful verification, and a passing enforcing script or justified no-check reason.
 
 ## 2026-11-08
 

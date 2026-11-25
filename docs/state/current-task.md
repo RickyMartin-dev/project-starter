@@ -10,10 +10,11 @@ In progress: consolidate the project history and learning changes with the open 
 
 ## Latest progress
 
-- The two independent reviewers approve the source as merge-ready. The local `main` base matches GitHub `main` at `712bd2ed7d4a987070f9561a7d5b73b85a9afb5e`.
-- `project check`, `release-check`, `doctor --json`, targeted automation and hardening regressions, shell syntax, and whitespace checks pass.
-- The only open PR is Dependabot #1 for `actions/checkout` v7.0.1; its verified immutable SHA is included in all three workflows.
-- The no-mistakes repository gate is initialized and its daemon is running. The feature branch, consolidated PR, and hosted CI are still pending.
+- PR #2 consolidates the history/learning work and Dependabot #1's immutable `actions/checkout` pin; the final candidate is ready to publish, and PR #1 remains open until the updated PR #2 head is green.
+- The working tree guards friction and pending-queue destinations, preserves unreadable or unsupported queued records, imports corrections into both memory records, deduplicates next-day retries, and prevents evidence text from imitating source/check metadata.
+- The expanded automation suite, `./scripts/project check`, `release-check`, `doctor --json`, shell syntax, learning gate, and `git diff --check` pass on the candidate.
+- Astra and Luna xhigh both state MERGE-READY on the reviewed working tree. The candidate is not yet pushed, so hosted CI must run on the published PR #2 head before readiness is final.
+- Do not merge. Push the reviewed candidate, confirm all PR checks green, then close superseded PR #1.
 
 ## Update protocol
 

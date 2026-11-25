@@ -22,7 +22,7 @@ This directory is the navigational layer for the repository's durable project kn
 
 - Every research note has a date checked and a recheck trigger.
 - Every compaction snapshot links to the commit or working-tree state it describes.
-- Every general lesson cites at least two independent task records and successful verification. Proposal promotions also append an evidence row to `docs/verification-log.md`; an explicit standing user correction can be recorded immediately.
+- Every general lesson cites two distinct existing task snapshots and successful verification; its enforcing check runs before the lesson is recorded. Proposal promotions also append an evidence row to `docs/verification-log.md`; an explicit standing user correction uses the `correction` marker and can be recorded immediately.
 - Stale or speculative material is labeled `TBD`, `proposed`, or `unverified`; it is never presented as project policy.
 
 ## Index maintenance
