@@ -7,6 +7,8 @@
   "releaseCheckCommand": "./scripts/project release-check",
   "startCommand": "./scripts/project start --task <request>",
   "finishCommand": "./scripts/project finish --summary <outcome>",
+  "historyRecallCommand": "./scripts/project recall <query>",
+  "historySearchScope": "Git commit subjects and canonical Markdown; excludes raw transcripts, local state, ignored resources, and external services",
   "autopilotPrompt": "prompts/autopilot.md",
   "localContextDirectory": ".agent-state/",
   "automaticHandoff": "docs/state/automatic-handoff.md",
@@ -53,6 +55,7 @@
     "specialist",
     "present",
     "autopilot",
+    "recall",
     "update-project-logic",
     "retro"
   ],

@@ -13,7 +13,7 @@ for file in docs/automation.md prompts/autopilot.md docs/state/automatic-handoff
   fi
 done
 
-for command in 'start_session' 'finish_session' 'refresh_local_context' 'automatic_snapshot' 'automatic_handoff' 'archive_snapshot_optional' 'refresh_snapshot_checkpoint'; do
+for command in 'start_session' 'finish_session' 'refresh_local_context' 'automatic_snapshot' 'automatic_handoff' 'archive_snapshot_optional' 'refresh_snapshot_checkpoint' 'recall_history' 'record_learning_review' 'month_has_records'; do
   if ! grep -qF "$command()" scripts/project; then
     printf 'automation check missing project function: %s\n' "$command" >&2
     failures=$((failures + 1))
@@ -25,7 +25,7 @@ if [[ ! -x scripts/snapshot-next-action.sh ]]; then
   failures=$((failures + 1))
 fi
 
-for command in 'start)' 'finish)' 'archive-snapshot)' '--task' '--summary' 'PROJECT_SNAPSHOT_ARCHIVE_ROOT' 'second-brain-checkpoint.md' 'core.hooksPath'; do
+for command in 'start)' 'finish)' 'archive-snapshot)' 'recall)' '--task' '--summary' '--limit 1-10' 'PROJECT_SNAPSHOT_ARCHIVE_ROOT' 'second-brain-checkpoint.md' 'core.hooksPath'; do
   if ! grep -qF -- "$command" scripts/project; then
     printf 'automation check missing project interface: %s\n' "$command" >&2
     failures=$((failures + 1))
@@ -41,6 +41,33 @@ done
 
 fixture_dir="$(mktemp -d)"
 trap 'rm -rf "$fixture_dir"' EXIT
+
+# The release gate must still validate untracked whitespace from a linked worktree,
+# where .git is a file instead of the main checkout's directory.
+release_fixture="$fixture_dir/release-root"
+release_worktree="$fixture_dir/release-linked-worktree"
+mkdir -p "$release_fixture/scripts"
+cp scripts/check-release.sh "$release_fixture/scripts/"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$release_fixture/scripts/check-starter.sh"
+chmod +x "$release_fixture/scripts/check-release.sh" "$release_fixture/scripts/check-starter.sh"
+git -C "$release_fixture" init -q
+git -C "$release_fixture" config user.email fixture@example.invalid
+git -C "$release_fixture" config user.name fixture
+git -C "$release_fixture" add scripts
+git -C "$release_fixture" commit -qm 'release fixture'
+git -C "$release_fixture" worktree add --detach "$release_worktree" HEAD >/dev/null
+printf 'trailing whitespace probe \n' > "$release_worktree/untracked-whitespace.txt"
+if [[ ! -f "$release_worktree/.git" || -d "$release_worktree/.git" ]]; then
+  printf 'automation fixture did not create a linked worktree.\n' >&2
+  failures=$((failures + 1))
+fi
+if (cd "$release_worktree" && ./scripts/check-release.sh) > "$fixture_dir/release-worktree.log" 2>&1; then
+  printf 'release check ignored untracked whitespace in a linked worktree.\n' >&2
+  failures=$((failures + 1))
+elif ! grep -qF 'whitespace errors detected in untracked file: untracked-whitespace.txt' "$fixture_dir/release-worktree.log"; then
+  printf 'release check failed in a linked worktree for an unexpected reason.\n' >&2
+  failures=$((failures + 1))
+fi
 cat > "$fixture_dir/checkpoint.md" <<'EOF'
 ## Open work and next action
 
@@ -210,6 +237,98 @@ for secret in "$aws_session_key" "$github_pat" "$slack_token" "$api_key" "$priva
     break
   fi
 done
+cat > "$project_fixture/docs/compactions/2026-01-recallprobe.md" <<'EOF'
+# Recall probe record
+
+This sanitized project note is the recallprobe result used to orient a later task.
+EOF
+mkdir -p "$project_fixture/.agent-state" "$project_fixture/resources/hermes-agent"
+printf '# Local state decoy\nrecallprobe should never appear from local state.\n' > "$project_fixture/.agent-state/decoy.md"
+printf '# Ignored resource decoy\nrecallprobe should never appear from resources.\n' > "$project_fixture/resources/hermes-agent/decoy.md"
+printf '/resources/\n' > "$project_fixture/.gitignore"
+recall_output="$(
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
+    "$project_fixture/scripts/project" recall recallprobe --limit 1 --json
+)"
+if ! grep -qF '"count":1' <<<"$recall_output" || \
+   ! grep -qF 'docs/compactions/2026-01-recallprobe.md' <<<"$recall_output" || \
+   grep -qE 'resources/|\.agent-state/' <<<"$recall_output"; then
+  printf 'CLI recall did not return one canonical record or leaked an excluded path.\n' >&2
+  failures=$((failures + 1))
+fi
+mkdir -p "$project_fixture/.agents/skills/frontmatter-recall"
+cat > "$project_fixture/.agents/skills/frontmatter-recall/SKILL.md" <<'EOF'
+---
+name: frontmatter-recall
+description: A fixture skill used to validate YAML frontmatter parsing.
+---
+# Frontmatter recall probe
+
+This frontmatterprobe line should return with a stable title and line reference.
+EOF
+frontmatter_recall_output="$(
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
+    "$project_fixture/scripts/project" recall $'frontmatterprobe\033' --limit 1 --json
+)"
+if [[ "$frontmatter_recall_output" == *$'\033'* ]]; then
+  printf 'CLI recall emitted a terminal control character into JSON output.\n' >&2
+  failures=$((failures + 1))
+fi
+if command -v python3 >/dev/null 2>&1; then
+  frontmatter_recall_valid=true
+  python3 -c 'import json,sys; d=json.load(sys.stdin); m=d["matches"][0]; assert d["count"]==1 and m["title"]=="Frontmatter recall probe" and m["line"]=="7" and "frontmatterprobe" in m["excerpt"] and m["source"].endswith(".agents/skills/frontmatter-recall/SKILL.md")' <<<"$frontmatter_recall_output" || frontmatter_recall_valid=false
+else
+  frontmatter_recall_valid=true
+  for expected in '"title":"Frontmatter recall probe"' '"line":"7"' '"excerpt":"This frontmatterprobe'; do
+    grep -qF "$expected" <<<"$frontmatter_recall_output" || frontmatter_recall_valid=false
+  done
+fi
+if [[ "$frontmatter_recall_valid" != true ]]; then
+  printf 'CLI recall did not parse YAML frontmatter or preserve its line and excerpt fields.\n' >&2
+  failures=$((failures + 1))
+fi
+title_prefix="$(printf '%110s' '' | tr ' ' 'x')"
+title_key_prefix='AKIA'
+title_key_suffix='1234567890ABCDEF'
+mkdir -p "$project_fixture/.agents/skills/partialcredential-recall"
+printf '%s%s%s\n\nThis partialcredentialprobe output verifies complete-title sanitization.\n' '# ' "$title_prefix" "$title_key_prefix$title_key_suffix" > "$project_fixture/.agents/skills/partialcredential-recall/SKILL.md"
+partial_credential_output="$(GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" "$project_fixture/scripts/project" recall partialcredentialprobe --limit 1 --json)"
+if grep -qF 'AKIA' <<<"$partial_credential_output"; then
+  printf 'CLI recall truncated a credential before sanitizing its title.\n' >&2
+  failures=$((failures + 1))
+fi
+# Large result sets previously let `head` close the sort pipe early under
+# pipefail. This exercises the public recall interface with output well beyond
+# a typical pipe buffer while still requesting only one record.
+mkdir -p "$project_fixture/docs/compactions/recall-load"
+for index in $(seq 1 400); do
+  printf '# Recall pressure %s\nThis recallpressure record has enough safe text to exercise bounded history sorting.\n' "$index" > "$project_fixture/docs/compactions/recall-load/$index.md"
+done
+recall_pressure_output="$(
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
+    "$project_fixture/scripts/project" recall recallpressure --limit 1 --json
+)"
+recall_pressure_valid=true
+if command -v python3 >/dev/null 2>&1; then
+  python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["count"]==1 and len(d["matches"])==1' <<<"$recall_pressure_output" || recall_pressure_valid=false
+elif ! grep -qF '"count":1' <<<"$recall_pressure_output"; then
+  recall_pressure_valid=false
+fi
+if [[ "$recall_pressure_valid" != true ]]; then
+  printf 'CLI recall failed while limiting a large history result set.\n' >&2
+  failures=$((failures + 1))
+fi
+recall_start_output="$(
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
+    "$project_fixture/scripts/project" start --task 'recallprobe' --json
+)"
+if ! grep -qF '"status":"ready"' <<<"$recall_start_output" || \
+   ! grep -qF 'docs/compactions/2026-01-recallprobe.md' "$project_fixture/.agent-state/session-context.md" || \
+   grep -qF 'Local state decoy' "$project_fixture/.agent-state/session-context.md" || \
+   grep -qF 'Ignored resource decoy' "$project_fixture/.agent-state/session-context.md"; then
+  printf 'CLI start did not include bounded recall or included an excluded source.\n' >&2
+  failures=$((failures + 1))
+fi
 
 if ! "$project_fixture/scripts/project" plan cli-smoke 'A Fixture Plan' >/dev/null || \
    ! grep -q 'A Fixture Plan' "$project_fixture/docs/plans/active/cli-smoke.md"; then
@@ -263,8 +382,32 @@ if ! grep -qF '"status":"pass"' <<<"$finish_output" || \
   printf 'CLI finish did not create a passing snapshot and handoff.\n' >&2
   failures=$((failures + 1))
 fi
+passing_snapshot="$(find "$project_fixture/docs/compactions" -maxdepth 1 -type f -name '*automatic-session.md' -print -quit)"
+if [[ -z "$passing_snapshot" ]] || \
+   ! grep -qF 'scripts/check-starter.sh` — pass' "$passing_snapshot" || \
+   ! grep -qF 'scripts/check-release.sh` — pass' "$passing_snapshot"; then
+  printf 'CLI finish snapshot does not record passed checks accurately.\n' >&2
+  failures=$((failures + 1))
+fi
 if grep -nE '[[:blank:]]+$' "$project_fixture/docs/state/automatic-handoff.md" >/dev/null; then
   printf 'CLI finish wrote trailing whitespace into the automatic handoff.\n' >&2
+  failures=$((failures + 1))
+fi
+printf '#!/usr/bin/env bash\nexit 1\n' > "$project_fixture/scripts/check-release.sh"
+failed_finish_output=''
+if failed_finish_output="$(
+  PROJECT_SNAPSHOT_ARCHIVE_ROOT='' GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
+    "$project_fixture/scripts/project" finish --summary 'failed release fixture' --json
+)"; then
+  printf 'CLI finish reported success when the release check failed.\n' >&2
+  failures=$((failures + 1))
+fi
+failed_snapshot_relative="$(printf '%s' "$failed_finish_output" | sed -n 's/.*"snapshot":"\([^"]*\)".*/\1/p')"
+if ! grep -qF '"status":"fail"' <<<"$failed_finish_output" || \
+   [[ -z "$failed_snapshot_relative" || ! -f "$project_fixture/$failed_snapshot_relative" ]] || \
+   ! grep -qF 'scripts/check-starter.sh` — pass' "$project_fixture/$failed_snapshot_relative" || \
+   ! grep -qF 'scripts/check-release.sh` — fail' "$project_fixture/$failed_snapshot_relative"; then
+  printf 'CLI finish did not record a failed release check accurately in its snapshot.\n' >&2
   failures=$((failures + 1))
 fi
 
@@ -272,13 +415,15 @@ fi
 friction_fixture="$fixture_dir/friction-project"
 mkdir -p "$friction_fixture/docs/state/proposals" "$friction_fixture/docs/compactions" "$friction_fixture/prompts"
 mkdir -p "$friction_fixture/scripts"
-cp -p scripts/project scripts/snapshot-next-action.sh scripts/check-learning.sh "$friction_fixture/scripts/"
+cp -p scripts/project scripts/snapshot-next-action.sh scripts/check-learning.sh scripts/archive_snapshot.py "$friction_fixture/scripts/"
 for stub in check-starter.sh check-release.sh; do
   printf '#!/usr/bin/env bash\nexit 0\n' > "$friction_fixture/scripts/$stub"
   chmod +x "$friction_fixture/scripts/$stub"
 done
 cp docs/state/proposals/README.md "$friction_fixture/docs/state/proposals/README.md"
 cp prompts/promote.md "$friction_fixture/prompts/promote.md"
+printf '# Task A\nIndependent occurrence.\n' > "$friction_fixture/docs/compactions/2026-01-01-a.md"
+printf '# Task B\nIndependent occurrence.\n' > "$friction_fixture/docs/compactions/2026-01-02-b.md"
 printf '# Lessons\n\n## Log\n\n- `YYYY-MM-DD — replace this example with the first durable lesson — x`\n' > "$friction_fixture/docs/lessons.md"
 friction_project() {
   (cd "$friction_fixture" && GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" ./scripts/project "$@")
@@ -294,13 +439,38 @@ if friction_project friction 'a' 's' 'c' 'f' --status bogus >/dev/null 2>&1; the
   printf 'CLI friction accepted an invalid status.\n' >&2
   failures=$((failures + 1))
 fi
-finish_friction_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'friction fixture' --friction 'beta-area|symptom|cause|fix')"
-if ! grep -qF '| beta-area | symptom | cause | fix | open' "$friction_fixture/docs/state/friction.md" || \
-   ! grep -qF 'Friction entries added: 1' <<<"$finish_friction_output"; then
+friction_count_before_bad_check="$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')"
+if friction_project friction 'bad-check' 's' 'c' 'f' --status lesson --check 'none:' >/dev/null 2>&1; then
+  printf 'CLI friction accepted an empty written reason for a lesson check.\n' >&2
+  failures=$((failures + 1))
+fi
+if [[ "$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')" != "$friction_count_before_bad_check" ]]; then
+  printf 'CLI friction partially wrote an invalid lesson entry.\n' >&2
+  failures=$((failures + 1))
+fi
+finish_friction_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'friction fixture' --friction 'beta-area|symptom|cause|fix' --friction 'alpha-area|second symptom|cause|fix' --json)"
+finish_json_valid=true
+if command -v python3 >/dev/null 2>&1; then
+  python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["status"]=="pass" and d["snapshotArchive"]=="disabled" and d["retrospective"] is None' <<<"$finish_friction_output" || finish_json_valid=false
+elif ! grep -qF '"status":"pass"' <<<"$finish_friction_output" || ! grep -qF '"retrospective":null' <<<"$finish_friction_output"; then
+  finish_json_valid=false
+fi
+if [[ "$finish_json_valid" != true ]]; then
+  printf 'CLI finish --json did not emit a valid JSON object with a null retrospective.\n' >&2
+  failures=$((failures + 1))
+fi
+if ! grep -qF '| beta-area | symptom | cause | fix | open' "$friction_fixture/docs/state/friction.md"; then
   printf 'CLI finish --friction did not append an entry.\n' >&2
   failures=$((failures + 1))
 fi
-friction_project friction 'alpha-area' 'second symptom' 'cause' 'fix' >/dev/null
+if ! grep -qF '"proposalsDrafted":1' <<<"$finish_friction_output" || \
+   ! grep -qF '## Learning review' "$friction_fixture/.agent-state/second-brain-checkpoint.md" || \
+   ! grep -qF 'proposal review drafted 1 proposal' "$friction_fixture/.agent-state/second-brain-checkpoint.md" || \
+   ! grep -qF '## Learning review' "$(find "$friction_fixture/docs/compactions" -type f -name '*automatic-session.md' -print -quit)"; then
+  printf 'CLI finish did not automatically group repeated friction into a learning record.\n' >&2
+  failures=$((failures + 1))
+fi
+friction_project friction 'alpha-area' 'third symptom' 'cause' 'fix' >/dev/null
 learn_output="$(friction_project learn --json)"
 if ! ls "$friction_fixture"/docs/state/proposals/*-alpha-area.md >/dev/null 2>&1 || \
    ls "$friction_fixture"/docs/state/proposals/*-beta-area.md >/dev/null 2>&1 || \
@@ -329,11 +499,43 @@ if ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); th
   printf 'learning gate failed even though a dated lesson exists.\n' >&2
   failures=$((failures + 1))
 fi
+standing_finish_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'standing correction fixture' --friction 'standing-correction|preserve the user rule|explicit user correction|record the sanitized rule|lesson' --json)"
+if ! grep -qF '"lessonsCurated":1' <<<"$standing_finish_output" || \
+   ! grep -qF 'standing-correction' "$friction_fixture/docs/state/friction.md" || \
+   ! grep -qF 'check: none: explicit standing user correction requires semantic judgment' "$friction_fixture/docs/lessons.md"; then
+  printf 'CLI finish did not immediately record an explicit standing correction as a lesson.\n' >&2
+  failures=$((failures + 1))
+fi
+general_finish_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'verified general lesson fixture' --friction 'verified-general|same workflow issue|independent task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; scripts/check-learning.sh passed|document the verified workflow|lesson|scripts/check-learning.sh' --json)"
+if ! grep -qF '"lessonsCurated":1' <<<"$general_finish_output" || \
+   ! grep -qF 'check: scripts/check-learning.sh' "$friction_fixture/docs/lessons.md" || \
+   ! grep -qF 'independent task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md' "$friction_fixture/docs/lessons.md"; then
+  printf 'CLI finish did not record a verified general lesson with cited evidence and its enforcing check.\n' >&2
+  failures=$((failures + 1))
+fi
+if ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); then
+  printf 'learning gate failed after recording a verified general lesson with an enforcing check.\n' >&2
+  failures=$((failures + 1))
+fi
+cp "$friction_fixture/docs/lessons.md" "$fixture_dir/lessons-valid.md"
+printf -- '- `2026-11-09 — empty none reason — evidence — check: none:`\n' >> "$friction_fixture/docs/lessons.md"
+if learning_output="$(cd "$friction_fixture" && ./scripts/check-learning.sh 2>&1)"; then
+  printf 'learning gate accepted a bare none: check with no explanation.\n' >&2
+  failures=$((failures + 1))
+elif ! grep -qF 'dated lesson must include an enforcing check or a written none reason' <<<"$learning_output"; then
+  printf 'learning gate rejected a bare none: check for an unexpected reason.\n' >&2
+  failures=$((failures + 1))
+fi
+cp "$fixture_dir/lessons-valid.md" "$friction_fixture/docs/lessons.md"
 
 # Evidence-based suggest-upgrades and retro
 evidence_fixture="$fixture_dir/evidence-project"
 mkdir -p "$evidence_fixture/docs/state/proposals" "$evidence_fixture/docs/compactions" "$evidence_fixture/docs/research" "$evidence_fixture/docs/retrospectives" "$evidence_fixture/.lavish" "$evidence_fixture/scripts"
 cp -p scripts/project scripts/snapshot-next-action.sh "$evidence_fixture/scripts/"
+for stub in check-starter.sh check-release.sh; do
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$evidence_fixture/scripts/$stub"
+  chmod +x "$evidence_fixture/scripts/$stub"
+done
 printf '# Friction log\n\n## Log\n\n- 2026-11-01 | flaky-hook | s1 | c | f | open\n- 2026-11-02 | flaky-hook | s2 | c | f | open\n- 2026-11-03 | solo-area | s3 | c | f | open\n' > "$evidence_fixture/docs/state/friction.md"
 printf '# Lessons\n\n## Log\n\n- `2026-11-01 — has check — e — check: scripts/x.sh`\n- `2026-11-02 — no check — e`\n' > "$evidence_fixture/docs/lessons.md"
 printf '# Old research\n' > "$evidence_fixture/docs/research/2020-01-01-old.md"
@@ -373,6 +575,74 @@ if [[ ! -f "$retro_html" ]] || ! grep -qF 'theme.css' "$retro_html" || ! grep -q
    ! grep -qF '<a href="#numbers" data-lavish-action>' "$retro_html" || grep -qF '<style' "$retro_html"; then
   printf 'retro --html output does not follow the shared Lavish theme.\n' >&2
   failures=$((failures + 1))
+fi
+
+auto_retro_fixture="$fixture_dir/auto-retro-project"
+cp -R "$evidence_fixture" "$auto_retro_fixture"
+find "$auto_retro_fixture/docs/retrospectives" -type f -delete
+retro_year="$(date +%Y)"
+retro_month_number="$(date +%m)"
+if (( 10#$retro_month_number == 1 )); then
+  retro_year=$((10#$retro_year - 1))
+  retro_month_number=12
+else
+  retro_month_number=$((10#$retro_month_number - 1))
+fi
+retro_previous_month="$(printf '%04d-%02d' "$retro_year" "$retro_month_number")"
+printf '# Previous month activity\n' > "$auto_retro_fixture/docs/compactions/$retro_previous_month-task.md"
+auto_retro_output="$(cd "$auto_retro_fixture" && PROJECT_SNAPSHOT_ARCHIVE_ROOT='' ./scripts/project finish --summary 'automatic retrospective fixture' --json)"
+auto_retro_valid=true
+if command -v python3 >/dev/null 2>&1; then
+  python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["retrospective"] == sys.argv[1]' "docs/retrospectives/$retro_previous_month.md" <<<"$auto_retro_output" || auto_retro_valid=false
+elif ! grep -qF "\"retrospective\":\"docs/retrospectives/$retro_previous_month.md\"" <<<"$auto_retro_output"; then
+  auto_retro_valid=false
+fi
+if [[ "$auto_retro_valid" != true ]] || [[ ! -f "$auto_retro_fixture/docs/retrospectives/$retro_previous_month.md" ]]; then
+  printf 'CLI finish did not create the missing retrospective for a recorded previous month.\n' >&2
+  failures=$((failures + 1))
+fi
+second_auto_retro_output="$(cd "$auto_retro_fixture" && PROJECT_SNAPSHOT_ARCHIVE_ROOT='' ./scripts/project finish --summary 'automatic retrospective idempotence fixture' --json)"
+second_retro_valid=true
+if command -v python3 >/dev/null 2>&1; then
+  python3 -c 'import json,sys; assert json.load(sys.stdin)["retrospective"] is None' <<<"$second_auto_retro_output" || second_retro_valid=false
+elif ! grep -qF '"retrospective":null' <<<"$second_auto_retro_output"; then
+  second_retro_valid=false
+fi
+if [[ "$second_retro_valid" != true ]]; then
+  printf 'CLI finish did not leave an existing previous-month retrospective untouched.\n' >&2
+  failures=$((failures + 1))
+fi
+
+auto_retro_failure_fixture="$fixture_dir/auto-retro-failure-project"
+cp -R "$evidence_fixture" "$auto_retro_failure_fixture"
+find "$auto_retro_failure_fixture/docs/retrospectives" -type f -delete
+printf '# Previous month activity\n' > "$auto_retro_failure_fixture/docs/compactions/$retro_previous_month-task.md"
+rmdir "$auto_retro_failure_fixture/docs/retrospectives"
+printf 'not a directory\n' > "$auto_retro_failure_fixture/docs/retrospectives"
+auto_retro_failure_stderr="$fixture_dir/auto-retro-failure-stderr.log"
+auto_retro_failure_output="$(cd "$auto_retro_failure_fixture" && PROJECT_SNAPSHOT_ARCHIVE_ROOT='' ./scripts/project finish --summary 'failed retrospective fixture' --json 2>"$auto_retro_failure_stderr")"
+auto_retro_failure_valid=true
+if command -v python3 >/dev/null 2>&1; then
+  python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["status"]=="pass" and d["retrospective"] is None' <<<"$auto_retro_failure_output" || auto_retro_failure_valid=false
+elif ! grep -qF '"retrospective":null' <<<"$auto_retro_failure_output"; then
+  auto_retro_failure_valid=false
+fi
+if [[ "$auto_retro_failure_valid" != true ]] || ! grep -qF 'could not create retrospective directory' "$auto_retro_failure_stderr"; then
+  printf 'CLI finish reported an unwritten retrospective as present.\n' >&2
+  failures=$((failures + 1))
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+  archive_root="$fixture_dir/snapshot-vault"
+  archive_stderr="$fixture_dir/archive-stderr.log"
+  archive_finish_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT="$archive_root" PROJECT_SNAPSHOT_AGENT=codex friction_project finish --summary 'archive json fixture' --json 2>"$archive_stderr")"
+  archive_finish_valid=true
+  python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["status"]=="pass" and d["snapshotArchive"]=="saved" and d["retrospective"] is None' <<<"$archive_finish_output" || archive_finish_valid=false
+  if [[ "$archive_finish_valid" != true ]] || ! grep -qF 'snapshot archived:' "$archive_stderr" || \
+     ! find "$archive_root/raw/project-snapshots" -type f -name '*.md' -print -quit | grep -q .; then
+    printf 'CLI finish --json did not keep stdout valid while archiving its snapshot.\n' >&2
+    failures=$((failures + 1))
+  fi
 fi
 
 if (( failures > 0 )); then

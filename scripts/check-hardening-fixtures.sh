@@ -46,6 +46,7 @@ copy_fixture() {
   cp "$ROOT_DIR/.githooks/"* "$TEMP_DIR/.githooks/"
   : > "$TEMP_DIR/agents/specialists/.gitkeep"
   git -C "$TEMP_DIR" init -q
+  git -C "$TEMP_DIR" config advice.addEmbeddedRepo false
   git -C "$TEMP_DIR" config user.email fixture@example.invalid
   git -C "$TEMP_DIR" config user.name fixture
   git -C "$TEMP_DIR" add -A
@@ -79,6 +80,19 @@ if ! (
   exit 1
 fi
 
+# An empty starter checkout must remain valid on Bash 3.x under nounset; array
+# expansions in the scanner cannot assume any ordinary candidate files exist.
+empty_scan_fixture="$TEMP_DIR/empty-scan"
+mkdir -p "$empty_scan_fixture/scripts" "$empty_scan_fixture/.agentic"
+cp "$ROOT_DIR/scripts/check-secrets.sh" "$empty_scan_fixture/scripts/"
+cp "$ROOT_DIR/.agentic/secret-scan-ignore" "$empty_scan_fixture/.agentic/"
+git -C "$empty_scan_fixture" init -q
+if ! (cd "$empty_scan_fixture" && bash scripts/check-secrets.sh >/dev/null 2>&1); then
+  printf 'hardening fixture failed: secret scan rejected an empty source tree.\n' >&2
+  failures=$((failures + 1))
+fi
+rm -rf "$empty_scan_fixture"
+
 printf 'AKIA%s\n' '1234567890ABCDEF' > "$TEMP_DIR/fake-leak.txt"
 expect_failure_with_message "credential pattern" "possible credential material" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
 rm -f "$TEMP_DIR/fake-leak.txt"
@@ -99,8 +113,11 @@ allow_dir=".agents/skills/impeccable/scripts/bin"
 mkdir -p "$TEMP_DIR/$allow_dir"
 printf 'AKIA%s\n' '1234567890ABCDEF' > "$TEMP_DIR/$allow_dir/engine"
 printf '%s/\n' "$allow_dir" > "$TEMP_DIR/.gitignore"
-if ! (cd "$TEMP_DIR" && bash scripts/check-secrets.sh >/dev/null 2>&1); then
+if allowlisted_scan_output="$(cd "$TEMP_DIR" && bash scripts/check-secrets.sh 2>&1)"; then
+  :
+else
   printf 'hardening fixture failed: allowlisted gitignored file should pass the secret scan.\n' >&2
+  printf '%s\n' "$allowlisted_scan_output" >&2
   failures=$((failures + 1))
 fi
 rm -f "$TEMP_DIR/.gitignore"
@@ -109,6 +126,64 @@ git -C "$TEMP_DIR" add -f "$allow_dir/engine"
 expect_failure_with_message "allowlisted but tracked" "secret scan allowlist violation" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
 git -C "$TEMP_DIR" rm -q -f --cached "$allow_dir/engine"
 rm -f "$TEMP_DIR/$allow_dir/engine"
+
+# The ignored Hermes reference checkout is excluded from filename and content
+# scans only while Git confirms every file is ignored and untracked.
+resource_dir="resources/hermes-agent"
+mkdir -p "$TEMP_DIR/$resource_dir/agent"
+resource_key_kind='PRIVATE KEY'
+printf '%s\n' "-----BEGIN ${resource_key_kind}-----" fixture > "$TEMP_DIR/$resource_dir/agent/secret_manager.py"
+git -C "$TEMP_DIR/$resource_dir" init -q
+git -C "$TEMP_DIR/$resource_dir" config user.email fixture@example.invalid
+git -C "$TEMP_DIR/$resource_dir" config user.name fixture
+git -C "$TEMP_DIR/$resource_dir" add agent/secret_manager.py
+git -C "$TEMP_DIR/$resource_dir" commit -qm 'reference fixture'
+printf 'resources/\n' > "$TEMP_DIR/.gitignore"
+if reference_scan_output="$(cd "$TEMP_DIR" && bash scripts/check-secrets.sh 2>&1)"; then
+  :
+else
+  printf 'hardening fixture failed: ignored nested Hermes checkout files should be skipped by the secret scan.\n' >&2
+  printf '%s\n' "$reference_scan_output" >&2
+  failures=$((failures + 1))
+fi
+rm -f "$TEMP_DIR/.gitignore"
+expect_failure_with_message "reference checkout allowlisted but not ignored" "secret scan allowlist violation" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+printf 'resources/\n' > "$TEMP_DIR/.gitignore"
+git -C "$TEMP_DIR" add -f "$resource_dir" 2>/dev/null
+expect_failure_with_message "reference checkout tracked as a gitlink" "secret scan allowlist violation" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+git -C "$TEMP_DIR" rm -q -f --cached -- "$resource_dir"
+rm -rf "$TEMP_DIR/$resource_dir/.git"
+git -C "$TEMP_DIR" add -f "$resource_dir/agent/secret_manager.py"
+expect_failure_with_message "reference checkout allowlisted but tracked" "secret scan allowlist violation" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+git -C "$TEMP_DIR" rm -q -f --cached "$resource_dir/agent/secret_manager.py"
+rm -rf "$TEMP_DIR/$resource_dir" "$TEMP_DIR/.gitignore"
+
+# Filename scanning remains active for paths whose content scan is excluded.
+mkdir -p "$TEMP_DIR/.codex"
+printf 'fixture\n' > "$TEMP_DIR/.codex/credentials.json"
+git -C "$TEMP_DIR" add -f .codex/credentials.json
+expect_failure_with_message "sensitive filename in excluded content directory" "sensitive-looking file found" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+git -C "$TEMP_DIR" rm -q -f --cached .codex/credentials.json
+rm -rf "$TEMP_DIR/.codex"
+
+# Dependency trees are generated content and may contain credential-named
+# package fixtures; they are intentionally outside both scanner passes.
+mkdir -p "$TEMP_DIR/node_modules/demo"
+dep_key_prefix='AKIA'
+dep_key_suffix='1234567890ABCDEF'
+printf '%s%s\n' "$dep_key_prefix" "$dep_key_suffix" > "$TEMP_DIR/node_modules/demo/credentials.json"
+if ! (cd "$TEMP_DIR" && bash scripts/check-secrets.sh >/dev/null 2>&1); then
+  printf 'hardening fixture failed: generated dependency content should be excluded from secret scanning.\n' >&2
+  failures=$((failures + 1))
+fi
+rm -rf "$TEMP_DIR/node_modules"
+
+mkdir -p "$TEMP_DIR/dist"
+printf 'fixture\n' > "$TEMP_DIR/dist/credentials.json"
+git -C "$TEMP_DIR" add -f dist/credentials.json
+expect_failure_with_message "sensitive tracked filename in generated output" "sensitive-looking file found" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+git -C "$TEMP_DIR" rm -q -f --cached dist/credentials.json
+rm -rf "$TEMP_DIR/dist"
 
 cat > "$TEMP_DIR/.github/workflows/unpinned.yml" <<'EOF'
 name: bad

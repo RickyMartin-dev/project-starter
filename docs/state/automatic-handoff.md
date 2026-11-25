@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-11-08 23:48 EST
-- Snapshot: `docs/compactions/2026-11-08-234821-automatic-session.md`
+- Updated: 2026-11-24 15:55 EST
+- Snapshot: `docs/compactions/2026-11-24-155521-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Moved contribution and changelog guides under docs and preserved discoverability
+Reviewed merge readiness; fixed finish verification records and linked-worktree whitespace checks; local gates pass, remote PR remains uncreated
 
 ## Resume path
 

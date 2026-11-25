@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 "$ROOT_DIR/scripts/check-starter.sh"
-if [[ -d .git ]]; then
+if git rev-parse --show-toplevel >/dev/null 2>&1; then
   # Check the complete worktree relative to HEAD so staged changes cannot
   # bypass the release gate. Fall back to the index/worktree comparison for
   # a freshly initialized repository with no HEAD commit yet. Untracked files

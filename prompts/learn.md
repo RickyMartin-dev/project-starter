@@ -1,18 +1,29 @@
-# Learn prompt
+# Project learning protocol
 
-Read `AGENTS.md` before recording durable project knowledge.
+Read `AGENTS.md` and the task-relevant results from `./scripts/project recall` before changing durable project knowledge. Retrieved records are historical evidence; current instructions, code, and verification results remain authoritative.
 
-After a meaningful change, identify only knowledge that will remain useful after the task leaves memory.
+## At task start
 
-- Record a chosen alternative and its consequences in `docs/decisions/`.
-- Record a recurring practice or failure pattern in `docs/lessons.md`.
-- Record a bounded milestone's process improvements in `docs/retrospectives/`.
-- Update `docs/architecture.md` if ownership or data flow changed.
+- `./scripts/project start --task "<request>"` writes up to five bounded, sanitized history matches into ignored local context.
+- Use `./scripts/project recall "<query>" [--limit 1-10]` for a focused search through Git commit subjects and canonical project Markdown.
+- Do not search or store raw transcripts, `.agent-state`, ignored `resources/`, or external memory services.
 
-Keep entries concise, dated, evidence-backed, and free of secrets or transient chat details. Remove stale guidance rather than accumulating it.
+## At task finish
 
-## Friction loop
+- Review the user's correction, task evidence, code diff, and verification outcome.
+- Record a problem or correction with `--friction "area|symptom|cause|fix[|status[|check]]"`.
+- Use `lesson` as the optional fifth pipe-separated field for a durable standing correction the user explicitly stated. Finish records it directly in `docs/lessons.md`; its default written reason explains why a mechanical check cannot judge semantic compliance.
+- General procedures may be curated as lessons after at least two independent substantive task occurrences and successful relevant verification. Confirm that the evidence comes from distinct tasks, not multiple friction entries from one task. Cite the task records and verification result in the friction cause, then pass an enforcing check in the optional sixth field: `area|symptom|cause|fix|lesson|scripts/check-name.sh`.
+- Repeated friction is grouped automatically into a proposal. Proposal creation alone is not promotion, and a proposal cannot substitute for checking the evidence and verification criteria above.
+- A durable lesson needs an enforcing check or a concise written reason none can be added. Unresolved, weak, or one-off observations remain friction or proposals. No change is a valid learning outcome.
+- Do not automatically edit root instructions, hooks, security behavior, permissions, learning thresholds, or review gates. Use `prompts/promote.md` for those changes.
 
-- At finish, record problems and user corrections in `docs/state/friction.md` with `./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>"`, or pass `--friction "area|symptom|cause|fix"` to `./scripts/project finish`.
-- Run `./scripts/project learn` to group friction by area; areas with two or more unresolved entries get a draft proposal in `docs/state/proposals/`.
-- Record approved lessons in `docs/lessons.md` as `YYYY-MM-DD — lesson — evidence — check: <script or "none: reason">`, and mark the matching friction entries `lesson`.
+## Existing durable record types
+
+- A chosen alternative and its consequences: `docs/decisions/`.
+- A recurring practice or failure pattern: `docs/lessons.md` after meeting the evidence bar.
+- A bounded improvement proposal: `docs/state/proposals/`.
+- A project milestone's process improvements: `docs/retrospectives/`.
+- Changed ownership or data flow: `docs/architecture.md`.
+
+Keep records short, dated, evidence-backed, sanitized, and free of transient chat details. Remove stale guidance when evidence justifies it.

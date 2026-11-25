@@ -2,6 +2,15 @@
 
 All notable changes to this starter are recorded here.
 
+## 2026-11-24
+
+- Added bounded project-local history recall at task start and a focused `project recall` command over Git subjects and canonical Markdown.
+- Automated finish learning reviews, friction proposal grouping, evidence-backed lesson curation, and idempotent prior-month retrospectives. Raw transcripts and ignored `resources/` stay outside history search.
+- Hardened filename and content scanning around ignored Hermes reference checkouts and generated trees, tightened lesson evidence validation, and fixed recall results for frontmatter and large histories.
+- Capped recall work at 50 skill notes, 450 Markdown history records, and 500 Git subjects while always including core orientation files.
+- Made finish JSON accurately report archive and retrospective state, removed unrun checks from snapshots, fixed month-independent retrospective coverage, and corrected linked-worktree whitespace checks.
+- Updated all repository workflows to the verified `actions/checkout` v7.0.1 commit used by the Dependabot PR.
+
 ## 2026-11-08
 
 - Added a learning loop: `docs/state/friction.md` with `project friction` and `finish --friction`; `project learn` drafts proposals for repeated problems; a gate requires real lessons once snapshots accumulate; lessons carry an enforcing check.

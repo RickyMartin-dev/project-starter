@@ -49,7 +49,29 @@ for snapshot in docs/compactions/*.md; do
 done
 lesson_count=0
 if [[ -f docs/lessons.md ]]; then
-  lesson_count="$(grep -cE '^- `?[0-9]{4}-[0-9]{2}-[0-9]{2} — ' docs/lessons.md || true)"
+  lesson_records="$(grep -E '^- `?[0-9]{4}-[0-9]{2}-[0-9]{2} — ' docs/lessons.md || true)"
+  lesson_count="$(printf '%s\n' "$lesson_records" | grep -c . || true)"
+  lesson_check_re=' — check: (.*)$'
+  while IFS= read -r lesson; do
+    [[ -n "$lesson" ]] || continue
+    if [[ "$lesson" =~ $lesson_check_re ]]; then
+      check="${BASH_REMATCH[1]}"
+      check="${check%\`}"
+      check="${check#"${check%%[![:space:]]*}"}"
+      check="${check%"${check##*[![:space:]]}"}"
+      if [[ "$check" == none:* ]]; then
+        check="${check#none:}"
+        check="${check#"${check%%[![:space:]]*}"}"
+        check="${check%"${check##*[![:space:]]}"}"
+      fi
+    else
+      check=''
+    fi
+    if [[ -z "$check" ]]; then
+      printf 'learning check: dated lesson must include an enforcing check or a written none reason: %s\n' "$lesson" >&2
+      failures=$((failures + 1))
+    fi
+  done <<< "$lesson_records"
 fi
 if (( snapshot_count > 5 && lesson_count == 0 )); then
   printf 'learning check: %s snapshots but no recorded lessons; run ./scripts/project learn and record lessons in docs/lessons.md.\n' "$snapshot_count" >&2

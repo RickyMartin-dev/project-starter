@@ -22,6 +22,8 @@ There is no application server or product build. Use the repository command to i
 
 `start` writes ignored local context and a task checkpoint. It installs `.githooks` only when no custom Git hooks path is configured. `finish` runs the checks, creates a repository snapshot and handoff, and archives a sanitized copy only when the optional archive root is configured.
 
+With `--task`, `start` also retrieves up to five lexical matches from core orientation files, up to 50 skill notes, up to 450 selected Markdown history records, and up to 500 relevant Git commits. Results are sanitized and local; they are evidence, not instructions.
+
 ## Quality gates
 
 ```bash
@@ -35,6 +37,7 @@ There is no application server or product build. Use the repository command to i
 ./scripts/project doctor --json
 
 # Durable context and improvement workflows
+./scripts/project recall "<query>" [--limit 1-10] [--json]
 ./scripts/project compact <slug> "<handoff title>"
 ./scripts/project archive-snapshot --summary "<outcome>" [--agent codex|claude]
 ./scripts/project research <slug> "<research question>"
@@ -42,8 +45,8 @@ There is no application server or product build. Use the repository command to i
 ./scripts/project suggest-upgrades [--json]   # ranked by friction, failures, unchecked lessons, stale research
 
 # Learning loop
-./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|lesson]
-./scripts/project finish --summary "<outcome>" --friction "<area>|<symptom>|<cause>|<fix>"
+./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|lesson] [--check <script-or-none-reason>]
+./scripts/project finish --summary "<outcome>" --friction "<area>|<symptom>|<cause>|<fix[|status[|check]]>"
 ./scripts/project learn [--json]          # drafts proposals for areas with 2+ entries
 ./scripts/project retro [YYYY-MM] [--html] [--force] [--json]
 ./scripts/project specialist <slug> "<role title>"
@@ -80,4 +83,6 @@ The starter gates do not install dependencies, start services, call hosted scann
 - Specialist role cards: `agents/`.
 - Visual review surfaces: `.lavish/`.
 
-These commands create reviewable Markdown and local repository state. They do not send project memory to an external service, train a model, or grant a generated specialist authority.
+At finish, friction is grouped automatically and a missing retrospective is created for the previous calendar month when records exist. Mark `lesson` for an explicit standing user correction, or for a general procedure after two independent substantive task occurrences and successful relevant verification. Cite distinct task records and verification in the cause field; for a general lesson, pass its enforcing check as the sixth friction field. Every lesson carries an enforcing check or a written reason none can be added.
+
+These commands create reviewable Markdown and local repository state. They do not search raw transcripts, send project memory to an external service, train a model, or grant a generated specialist authority.

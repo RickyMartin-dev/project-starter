@@ -6,6 +6,8 @@ Keep this list short, specific, and durable. Each entry should help a future hum
 
 `YYYY-MM-DD — lesson — evidence — check: <script or "none: reason">`
 
+An explicit, durable user correction may be recorded immediately. General procedures require at least two independent task records and successful relevant verification; cite both records in the evidence. If a mechanical check cannot judge a lesson, state why in its `check: none: ...` field.
+
 ## Log
 
 - `YYYY-MM-DD — replace this example with the first durable lesson — link to the relevant plan, decision, or issue`
