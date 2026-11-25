@@ -412,9 +412,13 @@ append_curated_lesson() {
   fi
 }
 
-friction_append() {
-  local area symptom cause fix status="${5:-open}" check="${6:-}" normalized_check=''
-  area="$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+friction_area_slug() {
+  printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'
+}
+
+friction_validate() {
+  local area status="${2:-open}" check="${3:-}" normalized_check
+  area="$(friction_area_slug "${1:-}")"
   if ! valid_slug "$area"; then
     printf 'friction area must be a short kebab-case slug.\n' >&2
     return 2
@@ -430,6 +434,12 @@ friction_append() {
       return 2
     fi
   fi
+}
+
+friction_append() {
+  local area symptom cause fix status="${5:-open}" check="${6:-}"
+  friction_validate "${1:-}" "$status" "$check" || return $?
+  area="$(friction_area_slug "${1:-}")"
   symptom="$(friction_field "${2:-}")"
   cause="$(friction_field "${3:-}")"
   fix="$(friction_field "${4:-}")"
@@ -965,27 +975,34 @@ finish_session() {
   local release_status=pass
   local archive_status=disabled
   local f_area f_symptom f_cause f_fix f_status f_check pending="$ROOT_DIR/.agent-state/friction-pending.md" pending_line
-  while IFS= read -r pending_line; do
-    [[ -n "$pending_line" ]] || continue
-    IFS='|' read -r f_area f_symptom f_cause f_fix f_status f_check extra <<<"$pending_line"
-    if [[ -n "${extra:-}" ]]; then
-      printf 'finish --friction accepts four to six pipe-separated fields.\n' >&2
-      return 2
-    fi
-    f_status="$(printf '%s' "${f_status:-open}" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
-    f_area="$(printf '%s' "$f_area" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
-    f_symptom="$(printf '%s' "$f_symptom" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
-    f_cause="$(printf '%s' "$f_cause" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
-    f_fix="$(printf '%s' "$f_fix" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
-    f_check="$(printf '%s' "${f_check:-}" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
-    if ! friction_append "$f_area" "$f_symptom" "$f_cause" "$f_fix" "$f_status" "$f_check"; then
-      return 1
-    fi
-    friction_added=$((friction_added + 1))
-    [[ "$f_status" == lesson ]] && lessons_curated=$((lessons_curated + 1))
-  done <<EOF2
+  local pass
+  for pass in validate append; do
+    while IFS= read -r pending_line; do
+      [[ -n "$pending_line" ]] || continue
+      IFS='|' read -r f_area f_symptom f_cause f_fix f_status f_check extra <<<"$pending_line"
+      if [[ -n "${extra:-}" ]]; then
+        printf 'finish --friction accepts four to six pipe-separated fields.\n' >&2
+        return 2
+      fi
+      f_status="$(printf '%s' "${f_status:-open}" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+      f_area="$(printf '%s' "$f_area" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+      f_symptom="$(printf '%s' "$f_symptom" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+      f_cause="$(printf '%s' "$f_cause" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+      f_fix="$(printf '%s' "$f_fix" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+      f_check="$(printf '%s' "${f_check:-}" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+      if [[ "$pass" == validate ]]; then
+        friction_validate "$f_area" "$f_status" "$f_check" || return 2
+        continue
+      fi
+      if ! friction_append "$f_area" "$f_symptom" "$f_cause" "$f_fix" "$f_status" "$f_check"; then
+        return 1
+      fi
+      friction_added=$((friction_added + 1))
+      [[ "$f_status" == lesson ]] && lessons_curated=$((lessons_curated + 1))
+    done <<EOF2
 $friction_flags
 EOF2
+  done
   if [[ -f "$pending" ]]; then
     while IFS= read -r pending_line; do
       if [[ "$pending_line" =~ $friction_line_pattern ]]; then

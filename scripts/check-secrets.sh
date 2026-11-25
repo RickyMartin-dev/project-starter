@@ -118,9 +118,12 @@ collect_candidate() {
     printf 'secret scan allowlist violation: %s matches %s but is tracked or not gitignored; allowlisted paths must be gitignored.\n' "$file" "$allowlist_file" >&2
     failures=$((failures + 1))
   fi
+  local base="${file##*/}" sensitive_name=false
+  shopt -s nocasematch
+  [[ "$base" == *credentials* || "$base" == *secret* ]] && sensitive_name=true
+  shopt -u nocasematch
   if [[ "$file" == .env || "$file" == .env.* || "$file" == */.env || "$file" == */.env.* || \
-        "$file" == *.pem || "$file" == *.key ]] || \
-     printf '%s\n' "$file" | grep -Eiq '(^|/)[^/]*(credentials|secret)[^/]*$'; then
+        "$file" == *.pem || "$file" == *.key || "$sensitive_name" == true ]]; then
     name_matches+=("$file")
   fi
   case "$file" in

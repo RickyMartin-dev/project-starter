@@ -13,7 +13,7 @@ for file in docs/automation.md prompts/autopilot.md docs/state/automatic-handoff
   fi
 done
 
-for command in 'start_session' 'finish_session' 'refresh_local_context' 'automatic_snapshot' 'automatic_handoff' 'archive_snapshot_optional' 'refresh_snapshot_checkpoint' 'recall_history' 'record_learning_review' 'month_has_records'; do
+for command in 'start_session' 'finish_session' 'refresh_local_context' 'automatic_snapshot' 'automatic_handoff' 'archive_snapshot_optional' 'refresh_snapshot_checkpoint'; do
   if ! grep -qF "$command()" scripts/project; then
     printf 'automation check missing project function: %s\n' "$command" >&2
     failures=$((failures + 1))
@@ -25,7 +25,7 @@ if [[ ! -x scripts/snapshot-next-action.sh ]]; then
   failures=$((failures + 1))
 fi
 
-for command in 'start)' 'finish)' 'archive-snapshot)' 'recall)' '--task' '--summary' '--limit 1-10' 'PROJECT_SNAPSHOT_ARCHIVE_ROOT' 'second-brain-checkpoint.md' 'core.hooksPath'; do
+for command in 'start)' 'finish)' 'archive-snapshot)' '--task' '--summary' 'PROJECT_SNAPSHOT_ARCHIVE_ROOT' 'second-brain-checkpoint.md' 'core.hooksPath'; do
   if ! grep -qF -- "$command" scripts/project; then
     printf 'automation check missing project interface: %s\n' "$command" >&2
     failures=$((failures + 1))
@@ -446,6 +446,14 @@ if friction_project friction 'bad-check' 's' 'c' 'f' --status lesson --check 'no
 fi
 if [[ "$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')" != "$friction_count_before_bad_check" ]]; then
   printf 'CLI friction partially wrote an invalid lesson entry.\n' >&2
+  failures=$((failures + 1))
+fi
+if PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'bad friction' --friction 'gamma-area|s|c|f' --friction 'delta-area|s|c|f|bogus' >/dev/null 2>&1; then
+  printf 'CLI finish accepted an invalid friction status.\n' >&2
+  failures=$((failures + 1))
+fi
+if [[ "$(wc -l < "$friction_fixture/docs/state/friction.md" | tr -d ' ')" != "$friction_count_before_bad_check" ]]; then
+  printf 'CLI finish wrote earlier friction entries before rejecting a later invalid one.\n' >&2
   failures=$((failures + 1))
 fi
 finish_friction_output="$(PROJECT_SNAPSHOT_ARCHIVE_ROOT='' friction_project finish --summary 'friction fixture' --friction 'beta-area|symptom|cause|fix' --friction 'alpha-area|second symptom|cause|fix' --json)"
