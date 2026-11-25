@@ -18,7 +18,7 @@ learning_check_script_path() {
 
 learning_verification_cites_check() {
   local cause="$1" script="$2" normalized_cause marker suffix
-  normalized_cause="$(printf '%s' "$cause" | sed -E 's/[Vv][Ee][Rr][Ii][Ff][Ii][Cc][Aa][Tt][Ii][Oo][Nn][[:space:]]+[Pp][Aa][Ss][Ss][Ee][Dd]:[[:space:]]*/verification passed: /g')"
+  normalized_cause="$(printf '%s' "$cause" | sed -E 's/[Vv][Ee][Rr][Ii][Ff][Ii][Cc][Aa][Tt][Ii][Oo][Nn][[:space:]]+[Pp][Aa][Ss][Ss][Ee][Dd]:[[:space:]]*/verification passed: /g; s|verification passed: \./|verification passed: |g')"
   marker="verification passed: $script"
   if [[ "$normalized_cause" != *"$marker"* ]]; then
     return 1

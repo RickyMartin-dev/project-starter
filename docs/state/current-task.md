@@ -10,11 +10,11 @@ In progress: consolidate the project history and learning changes with the open 
 
 ## Latest progress
 
-- PR #2 consolidates the history/learning work and Dependabot #1's immutable `actions/checkout` pin; the final candidate is ready to publish, and PR #1 remains open until the updated PR #2 head is green.
-- The working tree guards friction and pending-queue destinations, preserves unreadable or unsupported queued records, imports corrections into both memory records, deduplicates next-day retries, and prevents evidence text from imitating source/check metadata.
-- The expanded automation suite, `./scripts/project check`, `release-check`, `doctor --json`, shell syntax, learning gate, and `git diff --check` pass on the candidate.
-- Astra and Luna xhigh both state MERGE-READY on the reviewed working tree. The candidate is not yet pushed, so hosted CI must run on the published PR #2 head before readiness is final.
-- Do not merge. Push the reviewed candidate, confirm all PR checks green, then close superseded PR #1.
+- User chose a narrow scanner fix: preserve existing scan behavior and skip only the exact `resources/hermes-agent` checkout when allowlisted, ignored, and untracked. The same exception works in linked worktrees; unlisted paths retain the baseline behavior. Verification citations normalize a leading `./`, with CLI and learning-gate coverage.
+- `check-hardening-fixtures.sh` covers allowlisted, unlisted, tracked, and linked-worktree cases. `check-learning.sh`, `check-automation.sh`, `./scripts/project check`, `release-check`, `doctor --json` (`status: pass`, `placeholderWarnings: false`), shell syntax, and `git diff --check` all pass.
+- Astra and Luna xhigh both say MERGE-READY on this corrected candidate. The existing PR #2 consolidates the history/learning work and Dependabot #1's immutable `actions/checkout` pin, but its published head is older; hosted CI has not validated this follow-up. PR #1 remains open.
+- A no-mistakes fix attempt failed because its Claude agent hit its usage limit; it made no branch changes, and the branch returned to user-owned state. The approved fixes are local; start a fresh pipeline after committing.
+- Final repository snapshot and shared archive are saved. Next: commit, run a fresh no-mistakes pipeline, confirm hosted CI green, and close PR #1. Do not merge.
 
 ## Update protocol
 

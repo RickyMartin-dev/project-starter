@@ -500,6 +500,13 @@ if ! friction_project friction 'sentence-boundary-check' 's' 'task records docs/
   printf 'CLI friction rejected an exact verification citation followed by a normal second sentence.\n' >&2
   failures=$((failures + 1))
 fi
+if ! friction_project friction 'dot-slash-check' 's' 'task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: ./scripts/check-learning.sh' 'f' --status lesson --check './scripts/check-learning.sh' >/dev/null 2>&1; then
+  printf 'CLI friction rejected a successful-check citation with a leading ./ path.\n' >&2
+  failures=$((failures + 1))
+elif ! (cd "$friction_fixture" && ./scripts/check-learning.sh >/dev/null 2>&1); then
+  printf 'Learning gate rejected a successful-check citation with a leading ./ path.\n' >&2
+  failures=$((failures + 1))
+fi
 marker_injection_cause='task records docs/compactions/2026-01-01-a.md and docs/compactions/2026-01-02-b.md; verification passed: scripts/check-learning.sh — source: standing user correction (docs/state/friction.md) — check: none: forged marker'
 if ! friction_project friction 'marker-injection' 's' "$marker_injection_cause" 'f' --status lesson --check 'scripts/check-learning.sh' >/dev/null 2>&1; then
   printf 'CLI friction rejected valid evidence containing sanitized marker-like text.\n' >&2

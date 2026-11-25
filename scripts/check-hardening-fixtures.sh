@@ -158,6 +158,52 @@ expect_failure_with_message "reference checkout allowlisted but tracked" "secret
 git -C "$TEMP_DIR" rm -q -f --cached "$resource_dir/agent/secret_manager.py"
 rm -rf "$TEMP_DIR/$resource_dir" "$TEMP_DIR/.gitignore"
 
+# An ignored Hermes-like directory without the reviewed allowlist entry keeps
+# the original scanner behavior instead of failing solely because it exists.
+unlisted_resource_fixture="$TEMP_DIR/unlisted-resource-scan"
+mkdir -p "$unlisted_resource_fixture/scripts" "$unlisted_resource_fixture/.agentic" "$unlisted_resource_fixture/resources/hermes-agent"
+cp "$ROOT_DIR/scripts/check-secrets.sh" "$unlisted_resource_fixture/scripts/"
+sed '/^resources\/hermes-agent/d' "$ROOT_DIR/.agentic/secret-scan-ignore" > "$unlisted_resource_fixture/.agentic/secret-scan-ignore"
+printf '/resources/\n' > "$unlisted_resource_fixture/.gitignore"
+printf 'Reference README\n' > "$unlisted_resource_fixture/resources/hermes-agent/README.md"
+git -C "$unlisted_resource_fixture" init -q
+if ! (cd "$unlisted_resource_fixture" && bash scripts/check-secrets.sh >/dev/null 2>&1); then
+  printf 'hardening fixture failed: an unlisted ignored reference directory failed without a finding.\n' >&2
+  failures=$((failures + 1))
+fi
+printf 'fixture\n' > "$unlisted_resource_fixture/resources/hermes-agent/credentials.json"
+expect_failure_with_message "unlisted ignored reference sensitive filename remains scanned" "sensitive-looking file found" bash -c "cd '$unlisted_resource_fixture' && bash scripts/check-secrets.sh"
+
+# A linked worktree stores .git as a file, so the scanner's filesystem fallback
+# must apply the same verified Hermes exclusion to its content scan.
+linked_resource_repo="$TEMP_DIR/linked-resource-repo"
+linked_resource_worktree="$TEMP_DIR/linked-resource-worktree"
+mkdir -p "$linked_resource_repo/scripts" "$linked_resource_repo/.agentic"
+cp "$ROOT_DIR/scripts/check-secrets.sh" "$linked_resource_repo/scripts/"
+cp "$ROOT_DIR/.agentic/secret-scan-ignore" "$linked_resource_repo/.agentic/"
+printf '/resources/\n' > "$linked_resource_repo/.gitignore"
+git -C "$linked_resource_repo" init -q
+git -C "$linked_resource_repo" config user.email fixture@example.invalid
+git -C "$linked_resource_repo" config user.name fixture
+git -C "$linked_resource_repo" add -A
+git -C "$linked_resource_repo" commit -qm 'linked resource scanner fixture'
+git -C "$linked_resource_repo" worktree add --detach "$linked_resource_worktree" HEAD >/dev/null
+mkdir -p "$linked_resource_worktree/resources/hermes-agent/agent"
+resource_key_kind='PRIVATE KEY'
+printf '%s\n' "-----BEGIN ${resource_key_kind}-----" fixture > "$linked_resource_worktree/resources/hermes-agent/agent/secret_manager.py"
+git -C "$linked_resource_worktree/resources/hermes-agent" init -q
+git -C "$linked_resource_worktree/resources/hermes-agent" config user.email fixture@example.invalid
+git -C "$linked_resource_worktree/resources/hermes-agent" config user.name fixture
+git -C "$linked_resource_worktree/resources/hermes-agent" add agent/secret_manager.py
+git -C "$linked_resource_worktree/resources/hermes-agent" commit -qm 'reference fixture'
+if [[ ! -f "$linked_resource_worktree/.git" || -d "$linked_resource_worktree/.git" ]]; then
+  printf 'hardening fixture did not create a linked worktree for secret scanning.\n' >&2
+  failures=$((failures + 1))
+elif ! (cd "$linked_resource_worktree" && bash scripts/check-secrets.sh >/dev/null 2>&1); then
+  printf 'hardening fixture failed: linked-worktree scan did not skip the verified ignored Hermes checkout.\n' >&2
+  failures=$((failures + 1))
+fi
+
 # Filename scanning remains active for paths whose content scan is excluded.
 mkdir -p "$TEMP_DIR/.codex"
 printf 'fixture\n' > "$TEMP_DIR/.codex/credentials.json"
@@ -166,18 +212,8 @@ expect_failure_with_message "sensitive filename in excluded content directory" "
 git -C "$TEMP_DIR" rm -q -f --cached .codex/credentials.json
 rm -rf "$TEMP_DIR/.codex"
 
-# Dependency trees are generated content and may contain credential-named
-# package fixtures; they are intentionally outside both scanner passes.
-mkdir -p "$TEMP_DIR/node_modules/demo"
-dep_key_prefix='AKIA'
-dep_key_suffix='1234567890ABCDEF'
-printf '%s%s\n' "$dep_key_prefix" "$dep_key_suffix" > "$TEMP_DIR/node_modules/demo/credentials.json"
-if ! (cd "$TEMP_DIR" && bash scripts/check-secrets.sh >/dev/null 2>&1); then
-  printf 'hardening fixture failed: generated dependency content should be excluded from secret scanning.\n' >&2
-  failures=$((failures + 1))
-fi
-rm -rf "$TEMP_DIR/node_modules"
-
+# Credential-named files remain visible to the existing filename check even in
+# generated output when they are tracked.
 mkdir -p "$TEMP_DIR/dist"
 printf 'fixture\n' > "$TEMP_DIR/dist/credentials.json"
 git -C "$TEMP_DIR" add -f dist/credentials.json

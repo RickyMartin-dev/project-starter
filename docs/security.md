@@ -21,9 +21,9 @@ This starter is deliberately conservative. Agentic tools can read repository con
 
 ## Secret scan allowlist
 
-`.agentic/secret-scan-ignore` lists globs, one per line with a reason comment, for downloaded binaries whose bytes can match credential patterns by chance and intentionally ignored reference checkouts that are not project source. `scripts/check-secrets.sh` skips a listed path only when `git check-ignore -q` confirms it is gitignored. A file that matches a glob but is tracked or not ignored fails the check, so the allowlist can never hide committed secrets. Without a `.git` directory nothing is skipped. Review every new entry like a policy change.
+`.agentic/secret-scan-ignore` lists globs, one per line with a reason comment, for downloaded binaries whose bytes can match credential patterns by chance and intentionally ignored reference checkouts that are not project source. Content scanning skips a listed path only when Git confirms it is ignored; tracked or unignored matches fail, so the allowlist cannot hide committed files. Filename scanning and filesystem fallback skip the exact `resources/hermes-agent` checkout only after confirming it is allowlisted, ignored, and untracked. Without a Git repository nothing is skipped. Review every new entry like a policy change.
 
-The scanner checks sensitive-looking filenames in `.codex/` and `.agent-state/` while leaving their local contents unread. Untracked generated dependency and build trees (`node_modules/`, `dist/`, `build/`, and `coverage/`) are excluded from both filename and content checks; any files deliberately tracked there remain in scope.
+The filename scan checks sensitive-looking names in `.codex/`, `.agent-state/`, and generated trees such as `node_modules/`, `dist/`, `build/`, and `coverage/`; their contents are omitted from content scanning. The ignored Hermes checkout is pruned from filename scanning only while it remains untracked and Git-ignored.
 
 ## Prompt-injection test boundary
 

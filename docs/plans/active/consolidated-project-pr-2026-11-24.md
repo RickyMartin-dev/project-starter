@@ -19,20 +19,23 @@ Publish one feature branch and pull request containing the authorized working-tr
 - The current changes are the user's requested project work and should be included as a coherent set.
 - The only other open PR is Dependabot PR #1, updating `actions/checkout` to the reviewed v7.0.1 SHA; include that pin across all workflows.
 - The user selected a separate `correction` marker for immediate standing corrections; general `lesson` records require two distinct task snapshots, cited verification, and a passing check or justified no-check reason.
+- The user chose a narrow secret-scanner change: skip only the ignored, untracked `resources/hermes-agent` checkout while preserving existing scan coverage elsewhere.
+- A no-mistakes fix agent hit its Claude usage limit before changing the branch; apply its approved findings locally, rerun checks, then start a fresh pipeline.
 
 ## Steps
 
 - [x] Fix all independent review findings and add behavior-focused regression coverage.
 - [x] Run the repository checks and review the complete diff for secrets and whitespace.
-- [x] Obtain final merge-ready approval from Astra and Luna xhigh reviewers; resolve and re-review findings until both approve.
+- [x] Obtain final merge-ready approval from Astra and Luna xhigh reviewers on this follow-up; resolve and re-review findings until both approve.
 - [ ] Commit and push the final feature-branch head to PR #2, confirm hosted CI is green, then close superseded PR #1.
 - [x] Update the plan, checkpoint, and shared task snapshot.
 
 ## Acceptance criteria
 
 - [ ] One PR contains the existing authorized project changes and the open Dependabot workflow change.
-- [ ] Both independent reviewers state merge-ready.
-- [ ] Local documented checks pass and all PR CI checks are green.
+- [x] Both independent reviewers state merge-ready on the corrected candidate.
+- [x] Local documented checks pass.
+- [ ] All PR CI checks on the final published head are green.
 - [ ] No merge is performed.
 
 ## Verification

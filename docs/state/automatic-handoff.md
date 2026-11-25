@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-11-25 14:57 EST
-- Snapshot: `docs/compactions/2026-11-25-145759-automatic-session.md`
+- Updated: 2026-11-25 17:18 EST
+- Snapshot: `docs/compactions/2026-11-25-171826-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Hardened project history and evidence-based learning; local gates pass and the consolidated PR is ready for hosted CI.
+Narrow Hermes scanner exclusion and verification citation fix passed local gates; Astra and Luna xhigh are merge-ready, while hosted CI for the final PR head is pending.
 
 ## Resume path
 
