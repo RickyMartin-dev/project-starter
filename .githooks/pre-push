@@ -2,4 +2,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
+# Git exports repository-local variables to hooks. Clear them before the
+# release checks create fixture repositories and linked worktrees, or their
+# Git commands may target this checkout's metadata instead.
+while IFS= read -r git_env_var; do
+  unset "$git_env_var"
+done < <(git rev-parse --local-env-vars)
+
 "$ROOT_DIR/scripts/project" release-check
