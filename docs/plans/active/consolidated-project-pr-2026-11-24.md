@@ -1,4 +1,4 @@
-# Plan: Consolidate project learning changes and open PRs into one reviewed PR
+# Plan: Consolidate project learning changes and open PRs into one reviewed PR and merge it
 
 - Owner: Codex
 - Created: 2026-11-24
@@ -7,11 +7,10 @@
 
 ## Goal
 
-Publish one feature branch and pull request containing the authorized working-tree changes and Dependabot PR #1, with both independent reviewers approving merge readiness and all required GitHub checks green.
+Publish one feature branch and pull request containing the authorized project changes and Dependabot PR #1. Merge PR #2 to `main` after both independent reviewers approve and every required GitHub check is green; close PR #1 as superseded.
 
 ## Non-goals
 
-- Merge the pull request to `main`.
 - Add MCP or unrelated product capabilities.
 
 ## Assumptions and decisions
@@ -20,14 +19,16 @@ Publish one feature branch and pull request containing the authorized working-tr
 - The only other open PR is Dependabot PR #1, updating `actions/checkout` to the reviewed v7.0.1 SHA; include that pin across all workflows.
 - The user selected a separate `correction` marker for immediate standing corrections; general `lesson` records require two distinct task snapshots, cited verification, and a passing check or justified no-check reason.
 - The user chose a narrow secret-scanner change: skip only the ignored, untracked `resources/hermes-agent` checkout while preserving existing scan coverage elsewhere.
-- A no-mistakes fix agent hit its Claude usage limit before changing the branch; apply its approved findings locally, rerun checks, then start a fresh pipeline.
+- The no-mistakes fix agent and the following review run hit Claude's usage limit. The latest run failed before push without changing commit `b17d753`; Claude has since reset and the user authorized resuming.
+- The user has now explicitly authorized merging the consolidated PR after reviews and CI pass, superseding the earlier no-merge instruction.
 
 ## Steps
 
 - [x] Fix all independent review findings and add behavior-focused regression coverage.
 - [x] Run the repository checks and review the complete diff for secrets and whitespace.
 - [x] Obtain final merge-ready approval from Astra and Luna xhigh reviewers on this follow-up; resolve and re-review findings until both approve.
-- [ ] Commit and push the final feature-branch head to PR #2, confirm hosted CI is green, then close superseded PR #1.
+- [x] Commit the final reviewed candidate as `b17d753` on the existing feature branch.
+- [ ] Resume the no-mistakes pipeline; push the final head to PR #2, confirm hosted CI is green, merge PR #2 to `main`, then close superseded PR #1.
 - [x] Update the plan, checkpoint, and shared task snapshot.
 
 ## Acceptance criteria
@@ -36,7 +37,7 @@ Publish one feature branch and pull request containing the authorized working-tr
 - [x] Both independent reviewers state merge-ready on the corrected candidate.
 - [x] Local documented checks pass.
 - [ ] All PR CI checks on the final published head are green.
-- [ ] No merge is performed.
+- [ ] PR #2 is merged to `main`; PR #1 is closed as superseded.
 
 ## Verification
 

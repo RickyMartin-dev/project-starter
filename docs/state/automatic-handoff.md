@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-11-25 17:18 EST
-- Snapshot: `docs/compactions/2026-11-25-171826-automatic-session.md`
+- Updated: 2026-11-26 00:37 EST
+- Snapshot: `docs/compactions/2026-11-26-003751-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Narrow Hermes scanner exclusion and verification citation fix passed local gates; Astra and Luna xhigh are merge-ready, while hosted CI for the final PR head is pending.
+The narrow Hermes scanner exception and citation fix passed local gates; Astra and Luna xhigh approved, and the user authorized merging after hosted CI.
 
 ## Resume path
 
