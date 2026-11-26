@@ -2,20 +2,26 @@
 
 ## Status
 
-In progress: consolidate the project history and learning changes with the open Dependabot workflow update into one PR, then merge it to `main` after all reviews and CI checks pass.
+Complete: consolidated project history and learning changes and Dependabot PR #1 are merged into main.
 
 - Owner: Codex
-- Plan: `docs/plans/active/consolidated-project-pr-2026-11-24.md`
-- Acceptance: both independent reviews approve; local gates pass; one PR contains this work and Dependabot #1; all PR CI checks pass; merge PR #2 to `main` and close PR #1 as superseded.
+- Plan: docs/plans/completed/consolidated-project-pr-2026-11-24.md
+- Acceptance: consolidated PR reviewed by both independent reviewers, local checks passed, hosted CI green, PR #2 merged to main, and PR #1 closed as superseded.
 
-## Latest progress
+## Outcome
 
-- User chose a narrow scanner fix: preserve existing scan behavior and skip only the exact `resources/hermes-agent` checkout when allowlisted, ignored, and untracked. The same exception works in linked worktrees; unlisted paths retain the baseline behavior. Verification citations normalize a leading `./`, with CLI and learning-gate coverage.
-- `check-hardening-fixtures.sh` covers allowlisted, unlisted, tracked, and linked-worktree cases. `check-learning.sh`, `check-automation.sh`, `./scripts/project check`, `release-check`, `doctor --json` (`status: pass`, `placeholderWarnings: false`), shell syntax, and `git diff --check` all pass.
-- Astra and Luna xhigh both say MERGE-READY on this corrected candidate. The existing PR #2 consolidates the history/learning work and Dependabot #1's immutable `actions/checkout` pin, but its published head is older; hosted CI has not validated this follow-up. PR #1 remains open.
-- The final reviewed follow-up is committed as `b17d753`. The last no-mistakes run completed intent and rebase, then failed at review because Claude had reached its usage limit. It made no branch changes or push; Claude has since reset.
-- Both Astra and Luna xhigh approved the candidate, and all local gates pass. The final snapshot and shared archive are saved. Next: rerun the pipeline, publish PR #2's final head, confirm hosted CI green, merge PR #2 to `main`, then close PR #1 as superseded.
+- PR #2 merged at 0b269bfdea4485ec411d394d57ab81ca07446489. The final reviewed head was 77e7c822c774cb275fc5f73a74d6f8006e23d67c.
+- PR #1, the actions/checkout v7.0.1 update, is closed as superseded; the pin is included in the merged workflows.
+- Astra and Luna xhigh both marked the exact final PR head merge-ready.
+- Starter security and Starter quality workflows passed on that exact head.
+- Direct project check, release-check, and doctor --json passed on a clean snapshot of submitted feature commit 01f91dc; doctor reported no placeholder warnings.
+- The no-mistakes Test agent hit its 30-minute invocation limit before completing live scenarios. The timeout gate was approved after direct checks; the pipeline finished with passed-with-override.
+- Local main was fast-forwarded to the verified merge commit. Final task-closeout notes and sanitized learning records are included in a documentation-only follow-up.
+
+## Follow-up
+
+The test-agent timeout is recorded as friction for future review. Consider configuring a deterministic repository test command so routine validation does not spend a long agent budget on broad live scenarios.
 
 ## Update protocol
 
-At the start of a substantial task, record the goal, owner, plan link, and acceptance criteria here. Before handoff, record what changed, what was verified, and the next decision. Keep this file short and move completed context to `archive/` when it is no longer active.
+At the start of a substantial task, record the goal, owner, plan link, and acceptance criteria here. Before handoff, record what changed, what was verified, and the next decision. Keep this file short and move completed context to archive when it is no longer active.
