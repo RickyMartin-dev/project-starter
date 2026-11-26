@@ -6,18 +6,6 @@ cd "$ROOT_DIR"
 
 failures=0
 
-if find . -type f ! -path './.git/*' ! -path './scripts/check-secrets.sh' ! -path './.agentic/secret-scan-ignore' \( \
-  -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o \
-  -iname '*credentials*' -o -iname '*secret*' \
-\) -print -quit | grep -q .; then
-  printf 'sensitive-looking file found; remove it or add a reviewed safe example: ' >&2
-  find . -type f ! -path './.git/*' ! -path './scripts/check-secrets.sh' ! -path './.agentic/secret-scan-ignore' \( \
-    -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o \
-    -iname '*credentials*' -o -iname '*secret*' \
-  \) -print >&2
-  failures=$((failures + 1))
-fi
-
 credential_patterns=(
   'BEGIN (RSA|OPENSSH|EC|PGP) PRIVATE KEY|BEGIN (ENCRYPTED )?PRIVATE KEY'
   'AKIA[0-9A-Z]{16}'
@@ -29,9 +17,11 @@ credential_patterns=(
   'sk-proj-[A-Za-z0-9_-]{20,}'
 )
 
-# Reviewed allowlist of gitignored paths (downloaded binaries) that are skipped.
+# Reviewed allowlist of gitignored paths (downloaded binaries or the Hermes
+# reference checkout) that are skipped.
 # A listed path is skipped only when git confirms it is ignored and untracked.
 allowlist_file=".agentic/secret-scan-ignore"
+resource_checkout="resources/hermes-agent"
 allowlist_globs=()
 if [[ -f "$allowlist_file" ]]; then
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -44,7 +34,7 @@ fi
 
 is_allowlisted() {
   local candidate="$1" glob
-  if (( ${#allowlist_globs[@]} == 0 )); then
+  if (( ${#allowlist_globs[@]} == 0 )) || [[ "$candidate" == "$resource_checkout" ]]; then
     return 1
   fi
   for glob in "${allowlist_globs[@]}"; do
@@ -55,6 +45,50 @@ is_allowlisted() {
   done
   return 1
 }
+
+# The ignored Hermes checkout is a nested Git repository, so the filename scan
+# below must prune it explicitly. Skip it only when it is a real directory, the
+# allowlist matches, and the parent repository confirms it is ignored and untracked.
+skip_resource_checkout=false
+if [[ -d "$resource_checkout" && ! -L "$resource_checkout" ]] && \
+   is_allowlisted "$resource_checkout/"; then
+  if ! git rev-parse --show-toplevel >/dev/null 2>&1 || \
+     ! git check-ignore --no-index -q -- "$resource_checkout" || \
+     git ls-files --error-unmatch -- "$resource_checkout" >/dev/null 2>&1; then
+    printf 'secret scan allowlist violation: %s matches %s but is tracked or not gitignored; allowlisted paths must be gitignored.\n' "$resource_checkout" "$allowlist_file" >&2
+    failures=$((failures + 1))
+  else
+    skip_resource_checkout=true
+  fi
+fi
+
+find_sensitive_names() {
+  if [[ "$skip_resource_checkout" == true ]]; then
+    find . -path "./$resource_checkout" -prune -o -type f ! -path './.git/*' ! -path './scripts/check-secrets.sh' ! -path './.agentic/secret-scan-ignore' \( \
+      -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o \
+      -iname '*credentials*' -o -iname '*secret*' \
+    \) "$@"
+  else
+    find . -type f ! -path './.git/*' ! -path './scripts/check-secrets.sh' ! -path './.agentic/secret-scan-ignore' \( \
+      -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o \
+      -iname '*credentials*' -o -iname '*secret*' \
+    \) "$@"
+  fi
+}
+
+find_scan_files() {
+  if [[ "$skip_resource_checkout" == true ]]; then
+    find . -path "./$resource_checkout" -prune -o -type f ! -path './.git/*' -print0
+  else
+    find . -type f ! -path './.git/*' -print0
+  fi
+}
+
+if [[ -n "$(find_sensitive_names -print -quit)" ]]; then
+  printf 'sensitive-looking file found; remove it or add a reviewed safe example: ' >&2
+  find_sensitive_names -print >&2
+  failures=$((failures + 1))
+fi
 
 scan_files=()
 if [[ -d .git ]]; then
@@ -90,7 +124,7 @@ else
         scan_files+=("$relative_file")
         ;;
     esac
-  done < <(find . -type f ! -path './.git/*' -print0)
+  done < <(find_scan_files)
 fi
 
 for pattern in "${credential_patterns[@]}"; do

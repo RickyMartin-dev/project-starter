@@ -16,7 +16,10 @@ This command is idempotent and local-only. It:
 - refreshes `.agent-state/session-context.md`, which is ignored machine-local context;
 - installs the repository's project-local Git hooks;
 - checks the starter contract;
-- surfaces deterministic upgrade suggestions.
+- surfaces deterministic upgrade suggestions;
+- searches Git commit subjects and canonical project Markdown for up to five task-related history matches and writes sanitized snippets into local context.
+
+The history search is lexical and deliberately bounded. It does not search raw transcripts, `.agent-state/`, ignored `resources/`, external services, or non-project repositories. Results are historical evidence, not current instructions. Run `./scripts/project recall "<query>" [--limit 1-10]` for an explicit search.
 
 At the end of a meaningful session, the agent runs:
 
@@ -26,13 +29,18 @@ At the end of a meaningful session, the agent runs:
 
 This command:
 
+- records a sanitized learning review in the ignored checkpoint and durable snapshot;
+- imports validated pending friction records through the same guarded write path; malformed entries and legacy general lessons stay queued for review;
+- groups repeated friction into proposals;
+- records an explicitly marked `correction` immediately, or a general `lesson` only after two distinct task snapshots and successful verification; general lessons run their enforcing check before recording;
+- creates the missing retrospective for the previous calendar month when that month has project records;
 - runs the starter and release checks;
 - creates an automatic compaction snapshot under `docs/compactions/`;
 - updates `docs/state/automatic-handoff.md`;
 - records only sanitized, repository-local facts;
 - leaves all policy, credential, permission, and external-side-effect decisions reviewable.
 
-Each start also creates `.agent-state/second-brain-checkpoint.md`, an ignored local note for the active task. Keep it current at meaningful milestones so a compaction hook can preserve the latest project context without reading or copying the agent transcript.
+Each start also creates `.agent-state/second-brain-checkpoint.md`, an ignored local note for the active task. Keep it current at meaningful milestones so a compaction hook can preserve the latest project context without reading or copying the agent transcript. Explicit standing user corrections use the `correction` marker and may become lessons immediately. General `lesson` records require two distinct existing task snapshots, cited successful verification, and an enforcing check that passes before recording, or a written reason none can be added. Automatic grouping drafts proposals but does not itself curate lessons. No-op is valid.
 
 Automatic snapshots use the checkpoint's `Open work and next action` entry. If it is missing or still a template placeholder, the snapshot points the next agent to review active plans and upgrade suggestions.
 
@@ -75,7 +83,7 @@ Use the repo skill when the user asks for a freshness review, after a meaningful
 
 When using Claude Code from a linked worktree, verify that the installed version discovers the main checkout's `.claude/skills/`; skill discovery is version-sensitive.
 
-The skill reconciles verified project learning with canonical docs and relevant provider skills/hooks, audits code/process/security improvements, and checks current official AI-development guidance. It records dated research when evidence changes, reports the few highest-value improvements plainly, and leaves application behavior, global configuration, permissions, dependencies, production actions, and policy promotion behind existing approval gates. It does not claim autonomous model learning or run on a schedule; invoke it at those milestones.
+The skill reconciles verified project learning with canonical docs and relevant provider skills/hooks, audits code/process/security improvements, and checks current official AI-development guidance. It records dated research when evidence changes, reports the few highest-value improvements plainly, and leaves application behavior, global configuration, permissions, dependencies, production actions, and protected policy changes behind existing approval gates. The local finish loop records standing corrections and evidence-backed project lessons; it does not train a model or run on a schedule. Invoke the freshness review at those milestones.
 
 ## What remains intentionally gated
 

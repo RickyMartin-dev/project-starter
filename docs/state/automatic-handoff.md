@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-11-08 23:48 EST
-- Snapshot: `docs/compactions/2026-11-08-234821-automatic-session.md`
+- Updated: 2026-11-26 00:37 EST
+- Snapshot: `docs/compactions/2026-11-26-003751-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Moved contribution and changelog guides under docs and preserved discoverability
+The narrow Hermes scanner exception and citation fix passed local gates; Astra and Luna xhigh approved, and the user authorized merging after hosted CI.
 
 ## Resume path
 

@@ -12,7 +12,7 @@ The starter keeps the shared contract small, puts durable project knowledge in p
 - Reusable prompts and task templates for plan → implement → verify → review → learn loops.
 - A dependency-free `scripts/project` command for orientation, plan creation, and starter checks.
 - Local hardening checks for secrets, workflow supply chain, instruction drift, prompt injection, manifest integrity, and learning proposals.
-- A project-local memory and upgrade loop that lets a reviewer agent promote evidence-backed improvements without global memory or hidden orchestration.
+- A project-local history and learning loop: task start recalls relevant Git and Markdown records; task finish groups friction, records learning outcomes, and drafts proposals without global memory or hidden orchestration.
 - A cross-agent `/update-project-logic` skill that refreshes verified project knowledge, reviews improvements and risks, and researches current AI development practice.
 - Optional second-brain snapshot archiving for users who want task snapshots shared across repositories.
 - Compaction snapshots and a second-brain index so full project context survives long sessions and model switches.
@@ -62,13 +62,13 @@ For an existing clean repository, copy or merge this starter into the repository
 
 ## The operating loop
 
-1. Orient: read `AGENTS.md`, `docs/project-brief.md`, the relevant architecture docs, and the active plan.
+1. Orient: run `./scripts/project start --task "<request>"`; review its bounded local history matches as evidence, then read `AGENTS.md`, the relevant project brief, architecture docs, and active plan.
 2. Plan: write a small, testable plan under `docs/plans/active/`.
 3. Implement: make the smallest coherent change and keep the plan current.
 4. Verify: run the repository's checks plus `./scripts/project check`.
 5. Review: inspect the diff for correctness, security, regressions, and unnecessary complexity.
-6. Learn: record durable decisions and lessons so the next agent starts smarter.
-7. Promote: have the designated reviewer agent validate a learning proposal before changing shared policy.
+6. Learn: at finish, group repeated friction into proposals and record a concise learning outcome. Mark an explicit standing user correction as `correction` to record it immediately; use `lesson` only after two distinct task snapshots and successful verification, citing both records and an enforcing check or justified no-check reason.
+7. Promote: have the designated reviewer validate a proposal before changing protected shared policy. Lessons need an enforcing check or a written reason none is possible.
 8. Compact: snapshot facts, decisions, evidence, risks, and next actions before context compaction or handoff.
 9. Research: compare fresh external practice and record what to adopt, defer, or reject.
 10. Upgrade: create a bounded proposal, verify it, and promote only the smallest safe improvement.
@@ -97,7 +97,9 @@ Keep the shared source of truth in `AGENTS.md` and `docs/`. Native adapter files
 
 ## Project-local learning
 
-Each project keeps its own durable state under `docs/state/`. Agents may propose lessons, experiments, risks, and upgrade ideas under `docs/state/proposals/`. The designated reviewer agent uses `prompts/promote.md` to check evidence, scope, rollback, secrets, and trust boundaries before applying a promotion. This is repository-local learning, not automatic model retraining or a shared external memory service.
+Each project keeps its own durable state under `docs/state/`. At task start, `./scripts/project start --task` searches Git commit subjects and selected canonical Markdown, returning up to five sanitized matches; `./scripts/project recall "<query>"` runs a focused search. It excludes raw transcripts, ignored resources, local agent state, and external services.
+
+At finish, the project groups repeated friction into proposals, records the learning review in the checkpoint and task snapshot, and creates a missing retrospective for the previous month when records exist. An explicit standing user correction uses the `correction` marker and can be recorded immediately. General `lesson` records require two distinct existing task snapshots, successful verification, and an enforcing check or a written reason none can be added. Protected shared policy remains behind reviewer approval. This is repository-local learning, not automatic model retraining or a shared external memory service.
 
 ## Research, upgrades, and specialist agents
 
@@ -121,9 +123,9 @@ For a visual walkthrough and the latest gap-resolution report, open [`docs/prese
 - Plans and decisions are artifacts, not chat history.
 - Every agent change has a verification path.
 - Parallel work requires isolation and explicit ownership.
-- Generated knowledge must be labeled and reviewed before it becomes durable.
+- General project-local lessons need two independent task records and successful verification; protected policy changes require explicit review.
 - Tool-specific conveniences are adapters; the repository contract stays portable.
-- Durable memory is project-specific, evidence-backed, and explicitly promoted.
+- Durable memory is project-specific and evidence-backed; protected policy changes are explicitly promoted after review.
 
 ## Research behind the structure
 

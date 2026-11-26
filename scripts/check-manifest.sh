@@ -10,7 +10,7 @@ if [[ ! -f "$manifest" ]]; then
 fi
 
 failures=0
-for key in schemaVersion templateVersion sourceOfTruth doctorCommand releaseCheckCommand startCommand finishCommand autopilotPrompt localContextDirectory automaticHandoff hooksDirectory learningProposalDirectory promotionPrompt compactionCommand compactionDirectory snapshotArchiveHelper snapshotArchiveDirectory snapshotArchiveEnvironmentVariable codexProjectSkill claudeProjectSkill researchCommand researchDirectory upgradeCommand upgradeSuggestionCommand upgradeDirectory specialistCommand specialistDirectory specialistFactoryPrompt presentationArtifact workflowIds hardeningChecks adapterSurfaces durableState mutableProjectFiles upgradePolicy; do
+for key in schemaVersion templateVersion sourceOfTruth doctorCommand releaseCheckCommand startCommand finishCommand historyRecallCommand historySearchScope autopilotPrompt localContextDirectory automaticHandoff hooksDirectory learningProposalDirectory promotionPrompt compactionCommand compactionDirectory snapshotArchiveHelper snapshotArchiveDirectory snapshotArchiveEnvironmentVariable codexProjectSkill claudeProjectSkill researchCommand researchDirectory upgradeCommand upgradeSuggestionCommand upgradeDirectory specialistCommand specialistDirectory specialistFactoryPrompt presentationArtifact workflowIds hardeningChecks adapterSurfaces durableState mutableProjectFiles upgradePolicy; do
   if ! grep -qE "^[[:space:]]+\"$key\"[[:space:]]*:" "$manifest"; then
     printf 'manifest missing key: %s\n' "$key" >&2
     failures=$((failures + 1))
@@ -114,6 +114,8 @@ expected_values=(
   '"releaseCheckCommand": "./scripts/project release-check"'
   '"startCommand": "./scripts/project start --task <request>"'
   '"finishCommand": "./scripts/project finish --summary <outcome>"'
+  '"historyRecallCommand": "./scripts/project recall <query>"'
+  '"historySearchScope": "Git commit subjects and canonical Markdown; excludes raw transcripts, local state, ignored resources, and external services"'
   '"autopilotPrompt": "prompts/autopilot.md"'
   '"localContextDirectory": ".agent-state/"'
   '"automaticHandoff": "docs/state/automatic-handoff.md"'
@@ -160,7 +162,7 @@ for check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh c
   fi
 done
 
-for workflow in plan verify review learn research promote compact upgrade specialist present autopilot update-project-logic; do
+for workflow in plan verify review learn research promote compact upgrade specialist present autopilot recall update-project-logic; do
   if ! grep -qF "\"$workflow\"" "$manifest"; then
     printf 'manifest workflowIds is missing: %s.\n' "$workflow" >&2
     failures=$((failures + 1))

@@ -12,6 +12,7 @@ This directory is the navigational layer for the repository's durable project kn
 | Make a decision | `docs/decisions/README.md` | relevant decision record |
 | Run or verify code | `docs/project-commands.md` | `docs/quality.md` |
 | Learn from failure | `docs/state/bugs.md` | `docs/lessons.md`, `docs/retrospectives/` |
+| Recall related project history | `./scripts/project recall "<query>"` | task-specific matches in `.agent-state/session-context.md` |
 | Compare outside ideas | `docs/research/README.md` | latest research report |
 | Refresh project logic and current AI practice | `/update-project-logic` in Claude Code or `$update-project-logic` in Codex | matching provider-native repo skill |
 | Choose next improvement | `docs/upgrades/backlog.md` | `./scripts/project suggest-upgrades` |
@@ -21,7 +22,7 @@ This directory is the navigational layer for the repository's durable project kn
 
 - Every research note has a date checked and a recheck trigger.
 - Every compaction snapshot links to the commit or working-tree state it describes.
-- Every promoted lesson has an evidence row in `docs/verification-log.md`.
+- Every general lesson cites two distinct existing task snapshots and successful verification; its enforcing check runs before the lesson is recorded. Proposal promotions also append an evidence row to `docs/verification-log.md`; an explicit standing user correction uses the `correction` marker and can be recorded immediately.
 - Stale or speculative material is labeled `TBD`, `proposed`, or `unverified`; it is never presented as project policy.
 
 ## Index maintenance

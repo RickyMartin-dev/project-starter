@@ -2,7 +2,7 @@
 
 This starter is a repository-local operating system for long-lived agentic work. It is intentionally language- and domain-agnostic: the project supplies its runtime commands, while this repository supplies the memory, research, upgrade, specialist, and verification contracts.
 
-The normal user experience is automatic. Agents run `./scripts/project start --task "<request>"` before substantive work and `./scripts/project finish --summary "<outcome>"` after verification. The commands refresh local orientation, install hooks, capture durable context, and update the handoff without asking the user to perform routine project management.
+The normal user experience is automatic. Agents run `./scripts/project start --task "<request>"` before substantive work and `./scripts/project finish --summary "<outcome>"` after verification. The commands refresh local orientation, install hooks, retrieve relevant project history, capture durable context, review learning, and update the handoff without asking the user to perform routine project management.
 
 ## The loop
 
@@ -26,9 +26,12 @@ The second brain is a lazy-loaded graph of project facts, not a hidden vector da
 - `docs/research/` — external comparisons, source register, and freshness dates.
 - `docs/upgrades/` — prioritized improvements and their acceptance evidence.
 - `docs/compactions/` — point-in-time snapshots that make context recoverable after compaction.
+- Git commit subjects and selected canonical Markdown records — bounded lexical history recall for task orientation.
 - `agents/` — reviewed specialist role cards, not executable hidden agents.
 
 `AGENTS.md` stays a short map. Agents should load only the nodes relevant to the task, then record new edges in the appropriate document.
+
+At `start --task`, Project Starter retrieves at most five relevant matches from Git history and canonical Markdown. Use `./scripts/project recall "<query>" [--limit 1-10]` to search directly. Search scope excludes raw transcripts, ignored resources, local agent state, and external memory services. Retrieved records are evidence; current instructions and verification decide what still applies.
 
 ## Compaction protocol
 
@@ -57,4 +60,6 @@ The current system is summarized in `.lavish/project-starter-operating-system.ht
 
 ## What “learning” means here
 
-Learning is project-local improvement from verified evidence: a failed test becomes a bug or lesson, a measured experiment becomes a decision, and a successful proposal becomes promoted policy. This starter does not fine-tune models, transmit memory to another repository, or claim that an agent can safely rewrite itself without review.
+Learning is project-local improvement from verified evidence. A failed check becomes a bug or friction entry, a measured experiment can become a decision, and recurring friction is grouped into a proposal at task finish. Mark an explicit standing user correction `correction` to record it immediately as a lesson. A general procedure uses the `lesson` marker and requires two distinct task snapshots and successful relevant verification; cite both records and the result, and run an enforcing check before recording or provide a justified reason none can be added. Protected instructions, hooks, security behavior, permissions, thresholds, and review gates remain behind review.
+
+Every finish writes a concise learning outcome into the checkpoint and task snapshot, runs friction grouping, and creates a missing retrospective for the previous month when records exist. A no-op is a successful outcome when evidence does not support a durable change. This system stores reviewable project records; it does not fine-tune a model, search raw transcripts, or send memory to another repository.

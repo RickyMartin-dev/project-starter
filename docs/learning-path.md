@@ -28,7 +28,7 @@ Draft proposals under `docs/state/proposals/` or `docs/upgrades/proposals/`; a d
 
 ## Stage 6 — Measured autonomy
 
-Only after the earlier stages are stable, consider optional runtime orchestration, scheduling, retrieval, or external services. Add budgets, termination conditions, isolation, approval gates, and adversarial evaluations first. Acceptance: autonomy is bounded, observable, reversible, and no broader than the project owner authorized.
+The starter's local lexical retrieval and evidence-based finish loop are part of the baseline; they use only Git and selected Markdown records. Only after the earlier stages are stable, consider runtime orchestration, scheduling, external retrieval services, or remote memory. Add budgets, termination conditions, isolation, approval gates, and adversarial evaluations first. Acceptance: autonomy is bounded, observable, reversible, and no broader than the project owner authorized.
 
 ## Metrics worth tracking
 

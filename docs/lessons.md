@@ -4,7 +4,9 @@ Keep this list short, specific, and durable. Each entry should help a future hum
 
 ## Format
 
-`YYYY-MM-DD — lesson — evidence — check: <script or "none: reason">`
+`YYYY-MM-DD — area: lesson — apply: change — evidence: task records and verification — source: standing user correction or general lesson — check: <script or "none: reason">`
+
+An explicit, durable user correction is marked `correction` in the friction log and may be recorded immediately. General procedures use the `lesson` marker and require at least two distinct existing task snapshots plus successful relevant verification; cite both records and the result in the evidence. The source field preserves which path produced the entry. If a mechanical check cannot judge a lesson, state why in its `check: none: ...` field.
 
 ## Log
 
