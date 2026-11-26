@@ -21,6 +21,7 @@ credential_patterns=(
 # reference checkout) that are skipped.
 # A listed path is skipped only when git confirms it is ignored and untracked.
 allowlist_file=".agentic/secret-scan-ignore"
+resource_checkout="resources/hermes-agent"
 allowlist_globs=()
 if [[ -f "$allowlist_file" ]]; then
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -33,7 +34,7 @@ fi
 
 is_allowlisted() {
   local candidate="$1" glob
-  if (( ${#allowlist_globs[@]} == 0 )); then
+  if (( ${#allowlist_globs[@]} == 0 )) || [[ "$candidate" == "$resource_checkout" ]]; then
     return 1
   fi
   for glob in "${allowlist_globs[@]}"; do
@@ -46,12 +47,11 @@ is_allowlisted() {
 }
 
 # The ignored Hermes checkout is a nested Git repository, so the filename scan
-# below must prune it explicitly. Skip it only when the allowlist matches and
-# the parent repository confirms it is ignored and untracked.
-resource_checkout="resources/hermes-agent"
+# below must prune it explicitly. Skip it only when it is a real directory, the
+# allowlist matches, and the parent repository confirms it is ignored and untracked.
 skip_resource_checkout=false
-if [[ -e "$resource_checkout" || -L "$resource_checkout" ]] && \
-   is_allowlisted "$resource_checkout"; then
+if [[ -d "$resource_checkout" && ! -L "$resource_checkout" ]] && \
+   is_allowlisted "$resource_checkout/"; then
   if ! git rev-parse --show-toplevel >/dev/null 2>&1 || \
      ! git check-ignore --no-index -q -- "$resource_checkout" || \
      git ls-files --error-unmatch -- "$resource_checkout" >/dev/null 2>&1; then

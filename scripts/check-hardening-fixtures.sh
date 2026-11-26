@@ -158,6 +158,14 @@ expect_failure_with_message "reference checkout allowlisted but tracked" "secret
 git -C "$TEMP_DIR" rm -q -f --cached "$resource_dir/agent/secret_manager.py"
 rm -rf "$TEMP_DIR/$resource_dir" "$TEMP_DIR/.gitignore"
 
+# Only a real directory at the Hermes path is the reference checkout; an ignored
+# regular file there keeps the baseline content scan.
+mkdir -p "$TEMP_DIR/resources"
+printf '%s\n' "-----BEGIN ${resource_key_kind}-----" fixture > "$TEMP_DIR/$resource_dir"
+printf 'resources/\n' > "$TEMP_DIR/.gitignore"
+expect_failure_with_message "ignored regular file at reference checkout path" "possible credential material" bash -c "cd '$TEMP_DIR' && bash scripts/check-secrets.sh"
+rm -rf "$TEMP_DIR/resources" "$TEMP_DIR/.gitignore"
+
 # An ignored Hermes-like directory without the reviewed allowlist entry keeps
 # the original scanner behavior instead of failing solely because it exists.
 unlisted_resource_fixture="$TEMP_DIR/unlisted-resource-scan"
