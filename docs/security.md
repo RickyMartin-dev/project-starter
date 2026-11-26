@@ -21,9 +21,9 @@ This starter is deliberately conservative. Agentic tools can read repository con
 
 ## Secret scan allowlist
 
-`.agentic/secret-scan-ignore` lists globs, one per line with a reason comment, for downloaded binaries whose bytes can match credential patterns by chance and intentionally ignored reference checkouts that are not project source. Content scanning skips a listed path only when Git confirms it is ignored; tracked or unignored matches fail, so the allowlist cannot hide committed files. Filename scanning and filesystem fallback skip the exact `resources/hermes-agent` checkout only after confirming it is allowlisted, ignored, and untracked. Without a Git repository nothing is skipped. Review every new entry like a policy change.
+`.agentic/secret-scan-ignore` lists globs, one per line with a reason comment, for downloaded binaries whose bytes can match credential patterns by chance and intentionally ignored reference checkouts that are not project source. Content scanning skips a listed path only when Git confirms it is ignored; tracked or unignored matches fail, so the allowlist cannot hide committed files. Filename scanning and filesystem fallback skip the exact `resources/hermes-agent` checkout only when it is a real directory (not a file or symlink) that is allowlisted, ignored, and untracked; any other file at that path is scanned normally. Without a Git repository nothing is skipped. Review every new entry like a policy change.
 
-The filename scan checks sensitive-looking names in `.codex/`, `.agent-state/`, and generated trees such as `node_modules/`, `dist/`, `build/`, and `coverage/`; their contents are omitted from content scanning. The ignored Hermes checkout is pruned from filename scanning only while it remains untracked and Git-ignored.
+The filename scan checks sensitive-looking names in `.codex/`, `.agent-state/`, and generated trees such as `node_modules/`, `dist/`, `build/`, and `coverage/`; their contents are omitted from content scanning.
 
 ## Prompt-injection test boundary
 
