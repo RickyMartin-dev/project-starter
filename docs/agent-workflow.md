@@ -56,7 +56,7 @@ Before a long session ends, a context window compacts, or work moves between age
 
 ## 8. Research and suggest upgrades
 
-Use `./scripts/project research <slug> "<question>"` for a dated comparison of current practice. Use `./scripts/project suggest-upgrades --json` to surface deterministic signals such as placeholders, missing compaction history, or absent proposals. Create a proposal with `./scripts/project upgrade <slug> "<title>"`, then require evidence before promotion. Suggestions never edit the repository by themselves.
+Use `./scripts/project research <slug> "<question>"` for a dated comparison of current practice. Use `./scripts/project suggest-upgrades --json` to surface deterministic signals from recorded friction, recent failures, unchecked lessons, waiting proposals, or stale research. It stays quiet when those signals are absent. Create a proposal with `./scripts/project upgrade <slug> "<title>"`, then require evidence before promotion. Suggestions never edit the repository by themselves.
 
 ## Project logic refresh
 

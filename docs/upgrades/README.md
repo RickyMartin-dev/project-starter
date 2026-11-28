@@ -10,7 +10,7 @@ The upgrade system keeps improvement continuous without making every agent sessi
 ./scripts/project upgrade improve-memory "Improve project memory recall"
 ```
 
-Suggestions are deterministic signals, not autonomous changes. A proposal must document the problem, scope, expected benefit, evidence commands, rollback, and trust review before promotion.
+Suggestions are deterministic signals from recorded friction, recent failures, unchecked lessons, waiting proposals, or stale research. The command does not invent setup work when evidence is absent. Suggestions are not autonomous changes. A proposal must document the problem, scope, expected benefit, evidence commands, rollback, and trust review before promotion.
 
 Use `/update-project-logic` (Claude Code) or `$update-project-logic` (Codex) for a combined pass across current project learning, relevant agent guidance, improvement/security findings, and fresh AI-development research. It can refresh verified documentation and skill guidance; code or authority changes still follow the project's approval and upgrade process.
 

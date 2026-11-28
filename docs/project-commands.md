@@ -2,6 +2,8 @@
 
 These commands describe the Project Starter repository. Projects created from it should replace the baseline with their own clean-checkout development and quality commands.
 
+For a safe merge into an existing application, follow [`docs/adopting-existing-repo.md`](adopting-existing-repo.md); the starter does not currently provide a conflict-resolving installer.
+
 ## Environment
 
 - Required tools: Bash, Git, and standard command-line utilities (`awk`, `find`, `grep`, `sed`, `tr`, and `wc`). No application runtime is required.
@@ -20,7 +22,7 @@ There is no application server or product build. Use the repository command to i
 ./scripts/project finish --summary "Summarize the verified outcome"
 ```
 
-`start` writes ignored local context and a task checkpoint. It installs `.githooks` only when no custom Git hooks path is configured. `finish` runs the checks, creates a repository snapshot and handoff, and archives a sanitized copy only when the optional archive root is configured.
+`start` writes ignored local context and a task checkpoint, then runs a quick check of required files, shell syntax, and whitespace. It installs `.githooks` only when neither a custom Git hooks path nor an active native Git hook would be replaced. It does not run the slower security fixture suite. `finish` runs the full starter and release checks, creates a repository snapshot and handoff, and archives a sanitized copy only when the optional archive root is configured.
 
 With `--task`, `start` also retrieves up to five lexical matches from core orientation files, up to 50 skill notes, up to 450 selected Markdown history records, and up to 500 relevant Git commits. Results are sanitized and local; they are evidence, not instructions.
 
@@ -29,6 +31,9 @@ With `--task`, `start` also retrieves up to five lexical matches from core orien
 ```bash
 # Required files, adapters, local hardening checks, shell syntax, and tracked whitespace
 ./scripts/project check
+
+# Fast startup check (required files, shell syntax, and tracked whitespace)
+./scripts/project check --quick
 
 # Full pre-push gate, including tracked and untracked whitespace
 ./scripts/project release-check
@@ -42,7 +47,7 @@ With `--task`, `start` also retrieves up to five lexical matches from core orien
 ./scripts/project archive-snapshot --summary "<outcome>" [--agent codex|claude]
 ./scripts/project research <slug> "<research question>"
 ./scripts/project upgrade <slug> "<upgrade title>"
-./scripts/project suggest-upgrades [--json]   # ranked by friction, failures, unchecked lessons, stale research
+./scripts/project suggest-upgrades [--json]   # evidence-backed signals; no generic setup reminders
 
 # Learning loop
 ./scripts/project friction "<area>" "<symptom>" "<cause>" "<fix>" [--status open|fixed|correction|lesson] [--check <script-or-none-reason>]

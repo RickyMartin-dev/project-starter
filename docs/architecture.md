@@ -47,10 +47,10 @@ AGENTS.md and provider adapters
 
 ## State and side effects
 
-- `start --task` refreshes ignored `.agent-state/` files, detects common stack signals, retrieves up to five sanitized matches from Git and selected canonical Markdown, checks the starter, and configures `.githooks` only when no custom `core.hooksPath` is already set.
+- `start --task` refreshes ignored `.agent-state/` files, detects common stack signals, retrieves up to five sanitized matches from Git and selected canonical Markdown, runs a quick file/syntax/whitespace check, and configures `.githooks` only when there is no custom `core.hooksPath` or active native hook.
 - `check` runs file, instruction-surface, shell-syntax, whitespace, security, archive, and contract checks. `release-check` also includes untracked-file whitespace.
 - Git pre-commit and pre-push hooks run those checks; post-checkout and post-merge refresh local orientation.
-- GitHub Actions run starter and release checks with read-only permissions. A scheduled workflow prints deterministic upgrade suggestions; it does not edit policy or open a pull request.
+- GitHub Actions run starter and release checks with read-only permissions. A scheduled workflow publishes evidence-backed upgrade suggestions in the run summary; it does not edit policy or open a pull request.
 - `finish` groups repeated friction into proposals, records a learning outcome, creates a missing prior-month retrospective when records exist, and writes a repository-local snapshot and automatic handoff. If the user explicitly configures `PROJECT_SNAPSHOT_ARCHIVE_ROOT`, the Python standard-library helper writes a sanitized snapshot into that local vault and updates its index/log.
 
 ## Trust boundaries

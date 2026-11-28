@@ -17,7 +17,7 @@ The starter keeps the shared contract small, puts durable project knowledge in p
 - Optional second-brain snapshot archiving for users who want task snapshots shared across repositories.
 - Compaction snapshots and a second-brain index so full project context survives long sessions and model switches.
 - Fresh research comparisons, deterministic upgrade suggestions, and bounded specialist role cards for UI, UX, Python, trading, and any project-specific domain.
-- A committed Lavish presentation that makes the operating system easy to review visually.
+- Committed Lavish walkthroughs and a current HTML readiness report for visual review.
 - Automatic session orientation, local context refresh, Git hooks, verification, compaction, and handoff through `./scripts/project start` and `./scripts/project finish`.
 
 ## Quick start
@@ -58,7 +58,7 @@ cd my-project
 ./scripts/project finish --summary "Implemented and verified the first feature"
 ```
 
-For an existing clean repository, copy or merge this starter into the repository. The agent will detect the stack and maintain local context automatically; it should fill the project brief and project commands as part of the first build session.
+For an existing repository, follow the [safe adoption guide](docs/adopting-existing-repo.md) and merge rather than replace existing instructions, hooks, and CI. `start` detects common stack signals and writes local session context; it does not rewrite the project brief, architecture, command list, or CI for you. Tailor those files during the first implementation session.
 
 ## The operating loop
 
@@ -95,6 +95,15 @@ Use [`docs/learning-path.md`](docs/learning-path.md) to grow autonomy in stages:
 
 Keep the shared source of truth in `AGENTS.md` and `docs/`. Native adapter files should point to that source, not fork it into competing rulebooks.
 
+## Built-in skills and workflows
+
+- Codex discovers the repo skills `update-project-logic` and `impeccable` under `.agents/skills/`.
+- Claude Code includes `/update-project-logic` and `/impeccable`; Cursor includes `/impeccable`. Both expose shared workflow commands such as `/plan`, `/verify`, `/review`, `/learn`, `/research`, `/promote`, `/compact`, `/upgrade`, `/specialist`, `/autopilot`, and `/present`.
+- Impeccable bundles detailed design and accessibility workflows. Its detector downloads a platform binary the first time it runs; the core project commands do not need it.
+- Lavish is an optional external editor/CLI. This repository includes `.lavish/` themes and example review pages, but a fresh checkout does not install the `lavish-axi` command or its annotation service.
+
+See [Agent capabilities](docs/agent-capabilities.md) for the complete provider-by-provider inventory and limitations.
+
 ## Project-local learning
 
 Each project keeps its own durable state under `docs/state/`. At task start, `./scripts/project start --task` searches Git commit subjects and selected canonical Markdown, returning up to five sanitized matches; `./scripts/project recall "<query>"` runs a focused search. It excludes raw transcripts, ignored resources, local agent state, and external services.
@@ -107,7 +116,7 @@ Use [`docs/research/README.md`](docs/research/README.md) to create dated compari
 
 Specialists are portable Markdown role cards under [`agents/`](agents/). The factory prompt can draft a UI, UX, Python, trading, or domain-specific role, but a reviewer must approve scope and evidence before delegation. This keeps “agents that create agents” safe and portable across runtimes rather than hiding a provider-specific supervisor in the starter.
 
-For a visual walkthrough and the latest gap-resolution report, open [`docs/presentations/README.md`](docs/presentations/README.md) and launch the committed Lavish artifact.
+For a visual system walkthrough, open [`docs/presentations/README.md`](docs/presentations/README.md). The current [agent readiness report](resources/agent-readiness-report.html) is a standalone browser page using the repo's local Lavish theme.
 
 ## First customization pass
 
@@ -130,6 +139,8 @@ For a visual walkthrough and the latest gap-resolution report, open [`docs/prese
 ## Research behind the structure
 
 See [`docs/research/agentic-starter-repos.md`](docs/research/agentic-starter-repos.md) for the repository patterns that informed this template, including firstmate, Karpathy's autoresearch, Codex's repository guidance, and Cursor's rules and commands model.
+
+The latest repo-wide understanding and readiness review is [`resources/agent-readiness-report.html`](resources/agent-readiness-report.html). It includes the full provider capability inventory and researched gaps.
 
 ## Project guides
 

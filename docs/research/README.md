@@ -22,6 +22,7 @@ Use `backlog.md` to keep unanswered questions visible between research passes.
 - `2026-09-project-operating-system-research.md` — current comparison of memory, orchestration, evaluation, specialist routing, and governance patterns.
 - `2026-09-luna-operating-system-ecosystems.md`, `2026-09-luna-operating-system-governance.md`, and `2026-09-luna-operating-system-operations.md` — independent Luna research reports for this upgrade.
 - `2026-10-24-update-project-logic.md` — current Codex/Claude skill formats and evidence-led AI development guidance for the cross-agent refresh skill.
+- `2026-11-28-agent-ecosystem-gaps.md` — fresh official-practice comparison, adoption gaps, and measurement needs for the low-friction agent-learning mission.
 
 ## Freshness
 

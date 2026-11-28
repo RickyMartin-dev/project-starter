@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A repo-wide readiness review of Project Starter as a low-friction, repository-local learning system for coding agents.">
+  <title>Project Starter · Agent readiness review</title>
+  <link rel="stylesheet" href="../.lavish/theme.css">
+  <style>
+    :where(.lv-cols, .lv-grid, .lv-panel, .lv-table-wrap) > * { min-width: 0; }
+    .lv-links { flex-wrap: wrap; }
+    .lv-brand { max-width: 24rem; }
+    .lv-callout { margin-top: 30px; }
+    .lv-label { color: var(--text-2); font-size: 13px; }
+    .lv-command { display: block; margin: 12px 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--fill); overflow-wrap: anywhere; }
+    .lv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 36px; }
+    .lv-grid > * { min-width: 0; }
+    .lv-table-wrap { padding: 12px; }
+    .lv-list { margin: 0; padding-left: 1.2em; }
+    .lv-list li + li { margin-top: 10px; }
+    .lv-source-list { display: grid; gap: 12px; margin: 28px 0 0; padding: 0; list-style: none; }
+    .lv-source-list li { padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; }
+    .lv-source-list span { color: var(--text-2); }
+    .lv-status { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 18px; padding: 7px 12px; border-radius: 999px; background: var(--blue-tint); color: var(--blue); font-size: 13px; font-weight: 600; }
+    .lv-status::before { width: 7px; height: 7px; border-radius: 50%; background: currentColor; content: ""; }
+    .lv-gap-list { display: grid; gap: 24px; counter-reset: gap; }
+    .lv-gap { padding: 22px 0 0; border-top: 1px solid var(--line); counter-increment: gap; }
+    .lv-gap h3::before { content: "0" counter(gap) "  "; color: var(--blue); font: 500 13px/1 var(--mono); }
+    .lv-gap p { margin: 0; max-width: 72ch; color: var(--text-2); }
+    .lv-gap .lv-label { margin-top: 10px; }
+    .lv-source { font-size: 13px; }
+    @container lv (max-width: 680px) { .lv-grid { grid-template-columns: minmax(0, 1fr); } }
+    @media print {
+      .lv-nav { position: static; backdrop-filter: none; }
+      .lv-theme { display: none; }
+      .lv-section { break-inside: avoid; }
+      a { color: inherit; text-decoration: underline; }
+    }
+  </style>
+</head>
+<body class="lv-page">
+  <header class="lv-nav">
+    <div class="lv-wrap lv-nav-inner">
+      <span class="lv-brand">Project Starter · Readiness review</span>
+      <nav class="lv-links" aria-label="Report sections">
+        <a href="#purpose" data-lavish-action>Purpose</a>
+        <a href="#workflow" data-lavish-action>Workflow</a>
+        <a href="#capabilities" data-lavish-action>Skills</a>
+        <a href="#readiness" data-lavish-action>Readiness</a>
+        <a href="#gaps" data-lavish-action>Gaps</a>
+      </nav>
+      <div class="lv-theme" role="group" aria-label="Appearance">
+        <button type="button" data-lavish-action data-theme-choice="auto">Auto</button>
+        <button type="button" data-lavish-action data-theme-choice="light">Light</button>
+        <button type="button" data-lavish-action data-theme-choice="dark">Dark</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="lv-wrap">
+    <section class="lv-hero lv-hero-solo" id="purpose" aria-labelledby="hero-title">
+      <div>
+        <p class="lv-status">Ready for deliberate use · not yet one-click adoption</p>
+        <h1 class="lv-title" id="hero-title">A local memory and workflow layer for coding agents.</h1>
+        <p class="lv-lede">Project Starter gives coding agents a shared project contract, bounded access to prior work, repeatable checks, and a reviewed path for turning recurring experience into better project guidance.</p>
+        <p class="lv-meta">Repo-wide source review · independent cold read · official ecosystem research · 2026-11-28</p>
+        <ul class="lv-chips" aria-label="Key characteristics">
+          <li>Markdown + Bash + Git</li>
+          <li>No service or model training</li>
+          <li>Memory stays reviewable</li>
+        </ul>
+        <div class="lv-note lv-callout"><strong>Verdict:</strong> The project delivers a careful, useful continuity and governance system. It does not make the underlying model learn or guarantee better work. Existing-repo setup and proof of improvement are the largest remaining gaps.</div>
+      </div>
+    </section>
+
+    <section class="lv-section" aria-labelledby="map-heading">
+      <h2 class="lv-h2" id="map-heading">How the pieces connect</h2>
+      <p class="lv-intro">The agent reads one shared contract, uses a small command layer, then leaves evidence in files that a person or the next agent can inspect.</p>
+      <figure class="lv-panel lv-figure">
+        <svg class="lv-diagram" viewBox="0 0 960 380" role="img" aria-labelledby="system-title system-desc">
+          <title id="system-title">Project Starter operating flow</title>
+          <desc id="system-desc">A user request and shared agent instructions lead to scripts/project. The command prepares local context and checks; the work produces reviewed project records and evidence-backed improvement proposals.</desc>
+          <defs>
+            <marker id="readiness-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head" d="M2 1.5 L8 5 L2 8.5"/></marker>
+          </defs>
+          <g marker-end="url(#readiness-head)">
+            <path class="d-edge" d="M480 90 V126"/><path class="d-edge" d="M480 200 V236"/>
+            <path class="d-edge" d="M480 306 C480 330 200 318 200 338"/><path class="d-edge" d="M480 306 C480 330 480 318 480 338"/><path class="d-edge" d="M480 306 C480 330 760 318 760 338"/>
+          </g>
+          <g class="d-node">
+            <rect x="300" y="24" width="360" height="64" rx="14"/>
+            <rect x="300" y="130" width="360" height="64" rx="14"/>
+            <rect x="290" y="240" width="380" height="68" rx="16"/>
+            <rect x="42" y="340" width="316" height="32" rx="12"/>
+            <rect x="322" y="340" width="316" height="32" rx="12"/>
+            <rect x="602" y="340" width="316" height="32" rx="12"/>
+          </g>
+          <g text-anchor="middle">
+            <text class="d-label" x="480" y="52">User request + shared contract</text><text class="d-sub" x="480" y="72">AGENTS.md · thin provider adapters</text>
+            <text class="d-label" x="480" y="158">scripts/project</text><text class="d-sub" x="480" y="178">start · plan · check · finish · recall</text>
+            <text class="d-label" x="480" y="272">Build and verify</text><text class="d-sub" x="480" y="292">The agent runs product checks; gates inspect this starter</text>
+            <text class="d-label" x="200" y="361">Project memory</text><text class="d-label" x="480" y="361">Verification evidence</text><text class="d-label" x="760" y="361">Reviewed proposals</text>
+          </g>
+        </svg>
+      </figure>
+      <div class="lv-cols" style="--cols: 3">
+        <div><h3>Memory</h3><p>Plans, handoffs, lessons, and snapshots live as normal Markdown under <code>docs/</code>. Recall returns a small, sanitized set of lexical matches.</p></div>
+        <div><h3>Verification</h3><p>Shell checks, Git hooks, and read-only GitHub workflows protect the starter's own contract. An adopting app supplies its own test, build, and deploy checks.</p></div>
+        <div><h3>Improvement</h3><p>Friction and research can suggest narrow changes. A person reviews shared policy, permissions, and automation changes before promotion.</p></div>
+      </div>
+    </section>
+
+    <section class="lv-section" id="workflow" aria-labelledby="workflow-heading">
+      <h2 class="lv-h2" id="workflow-heading">Use it with low overhead</h2>
+      <p class="lv-intro">For a fresh starter checkout, the routine path is a few shell commands. `start` writes ignored local state; durable project records are created only as work warrants them.</p>
+      <div class="lv-panel">
+        <code class="lv-command">git clone https://github.com/RickyMartin-dev/project-starter.git my-project<br>cd my-project<br>./scripts/project start --task "Describe the first task"</code>
+        <ol class="lv-steps">
+          <li><div><h3>Orient</h3><p>Read <code>AGENTS.md</code>, then `.agent-state/session-context.md`. The latter contains up to five history matches; treat them as evidence and confirm current facts.</p></div></li>
+          <li><div><h3>Tailor once</h3><p>Replace the starter's project brief, command list, and architecture map with the product's truth. <code>start</code> detects common stack signals; it does not write those docs for you.</p></div></li>
+          <li><div><h3>Do only the needed process</h3><p>Plan larger work with <code>./scripts/project plan</code>. Keep trivial changes direct. Use targeted prompts and skills only when their workflow matches.</p></div></li>
+          <li><div><h3>Verify the product and the layer</h3><p>Run the adopting app's documented checks, then <code>./scripts/project check</code>. Run <code>./scripts/project release-check</code> before pushing.</p></div></li>
+          <li><div><h3>Preserve learning</h3><p>Finish meaningful work with <code>./scripts/project finish --summary "..."</code>. It records a local snapshot and handoff; an optional archive needs an explicit local path.</p></div></li>
+        </ol>
+      </div>
+      <p class="lv-note"><strong>Existing repository:</strong> there is no overlay installer today. Merge files with a diff, keep existing instructions, hooks, and CI, and do not import this repo's task history as the adopting project's memory. See <a href="../docs/adopting-existing-repo.md">the adoption guide</a>.</p>
+    </section>
+
+    <section class="lv-section" id="capabilities" aria-labelledby="capabilities-heading">
+      <h2 class="lv-h2" id="capabilities-heading">What ships for each coding agent</h2>
+      <p class="lv-intro">A fresh checkout contains shared Markdown workflows plus provider-specific entry points. The path is portable; actual skill discovery and hook behavior depend on the installed agent version.</p>
+      <div class="lv-table-wrap">
+        <table class="lv-table">
+          <thead><tr><th>Agent or tool</th><th>Included in this repo</th><th>How to use it</th></tr></thead>
+          <tbody>
+            <tr><td>Codex</td><td><code>.agents/skills/update-project-logic/</code> and <code>.agents/skills/impeccable/</code></td><td><code>$update-project-logic</code> for project guidance/research refresh; <code>$impeccable</code> for UI and design work. Shared workflow details live in <code>prompts/</code>.</td></tr>
+            <tr><td>Claude Code</td><td><code>.claude/skills/</code> contains the same two skills; <code>.claude/commands/</code> contains eleven workflow commands.</td><td>Invoke <code>/update-project-logic</code>, <code>/impeccable</code>, or <code>/autopilot</code>, <code>/compact</code>, <code>/learn</code>, <code>/plan</code>, <code>/present</code>, <code>/promote</code>, <code>/research</code>, <code>/review</code>, <code>/specialist</code>, <code>/upgrade</code>, and <code>/verify</code>.</td></tr>
+            <tr><td>Cursor</td><td><code>.cursor/skills/impeccable/</code>, shared context rule, and eleven command adapters.</td><td>Invoke <code>/impeccable</code> and the same shared workflow commands. There is no Cursor-specific copy of <code>update-project-logic</code>.</td></tr>
+            <tr><td>Other agents</td><td><code>AGENTS.md</code>, <code>docs/</code>, and <code>prompts/</code> are provider-neutral files.</td><td>Follow the shared workflow directly. The repo does not guarantee native skill or slash-command discovery for other clients.</td></tr>
+            <tr><td>Lavish Editor</td><td><code>.lavish/theme.css</code>, <code>.lavish/theme.js</code>, and local HTML examples.</td><td><code>lavish-axi</code>, its annotation UI, and its local service are external. They are not installed by a fresh checkout.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="lv-cols" style="--cols: 2">
+        <div><h3>Impeccable</h3><p>A bundled design skill for product context, design systems, UI construction, critique, accessibility, responsive layouts, polishing, and related workflows. The design detector downloads a platform binary on first use. Claude and Cursor hook settings are included; inspect them before adopting into custom settings.</p></div>
+        <div><h3>Role cards</h3><p><code>agents/roles/</code> includes UI, UX, Python, and trading briefs. Use <code>prompts/factory.md</code> or <code>./scripts/project specialist</code> to draft a bounded role. A card does not grant permission to spawn an agent or use credentials.</p></div>
+      </div>
+      <p class="lv-label">Full inventory: <a href="../docs/agent-capabilities.md">docs/agent-capabilities.md</a>. Adapter links and paths: <a href="../README.md#using-different-agents-in-one-repository">README</a>.</p>
+    </section>
+
+    <section class="lv-section" id="readiness" aria-labelledby="readiness-heading">
+      <h2 class="lv-h2" id="readiness-heading">How well it matches the stated goal</h2>
+      <p class="lv-intro">The strongest fit is low-infrastructure project continuity with deliberate human review. The weak fit is “drop one thing into any repo and immediately prove it makes agents better.”</p>
+      <div class="lv-table-wrap">
+        <table class="lv-table">
+          <thead><tr><th>Goal</th><th>What the repo actually provides</th><th>Read</th></tr></thead>
+          <tbody>
+            <tr><td>Low setup</td><td>Bash, Git, shell utilities; no app runtime or service. Existing-repo adoption still involves manual conflict-aware merges.</td><td>Good for a new starter checkout; partial for an existing project.</td></tr>
+            <tr><td>Low token use</td><td>Concise root contract, bounded lexical history results, task-specific prompts, and skills loaded only when needed.</td><td>Designed for it. Exact token savings are not measured.</td></tr>
+            <tr><td>Learn project context over time</td><td>Friction, reviewed lessons, plans, research, snapshots, decisions, and up to five start-time history matches.</td><td>Real repository-local memory; relevance depends on the agent opening and checking it.</td></tr>
+            <tr><td>Become smarter / more capable</td><td>Better project context and reusable procedures can guide future sessions. There is no model fine-tuning, shared global memory, or automatic skill promotion.</td><td>Indirect support, not model learning or a quality guarantee.</td></tr>
+            <tr><td>Suggest improvements sometimes</td><td>Local deterministic signals plus a weekly GitHub Actions report; a person reviews proposals before changes.</td><td>Governed and visible. The schedule requires GitHub Actions; local projects can run the command manually.</td></tr>
+            <tr><td>Verify readiness</td><td>Starter-specific integrity, security, adapter, memory, and workflow checks. No application-level tests exist here.</td><td>Strong self-checks; adopting projects must add their own acceptance/evaluation harness.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="lv-grid" style="margin-top: 36px">
+        <div><h3>Measured in this review</h3><ul class="lv-list"><li>Source wiring between the shared contract, CLI, memory, checks, provider adapters, and weekly review.</li><li>Offline repo gates and automation fixtures.</li><li>Fresh official guidance around skills, concise context, and task evaluation.</li></ul></div>
+        <div><h3>Not measured here</h3><ul class="lv-list"><li>Whether the same coding task gets a better or faster result with this layer.</li><li>Context-token cost by provider and task size.</li><li>Skill discovery and hook behavior across installed agent versions.</li><li>Installation time and conflict rate in a real existing repo.</li></ul></div>
+      </div>
+    </section>
+
+    <section class="lv-section" id="gaps" aria-labelledby="gaps-heading">
+      <h2 class="lv-h2" id="gaps-heading">Gaps</h2>
+      <p class="lv-intro">These are the remaining gaps after the code and documentation fixes in this pass. They are based on repository inspection plus the official ecosystem sources linked below.</p>
+      <div class="lv-gap-list">
+        <article class="lv-gap">
+          <h3>No safe one-command installer for an existing repo</h3>
+          <p>The repository says “copy or merge,” but an adopter still has to reconcile <code>AGENTS.md</code>, provider settings, Git hooks, CI, and project memory by hand. A naive copier could overwrite existing authority or import this starter's history. I added a conflict-aware guide; a preview-first installer remains the clearest way to meet the “low setup” promise.</p>
+          <p class="lv-label">Next evidence: install into a fixture repo that already has instructions, hooks, and workflows; prove no pre-existing file or hook changes without an explicit choice.</p>
+        </article>
+        <article class="lv-gap">
+          <h3>No empirical measure that agents improve</h3>
+          <p>The shell gates prove file contracts and workflow behavior. They do not compare agent task quality, retries, wall-clock time, or input-token use with and without the starter. The project-logic skill has prompt cases, but the repo check validates the CSV shape rather than running agent sessions.</p>
+          <p class="lv-label">Next evidence: a small matched task set with explicit outcome, process, cleanliness, and token/time checks. Start from the existing experiment system rather than adding a service.</p>
+        </article>
+        <article class="lv-gap">
+          <h3>Provider behavior is described more broadly than it is tested</h3>
+          <p>The core Git hook setup now preserves active native hooks in normal checkouts and linked worktrees, but automated checks do not launch Codex, Claude Code, or Cursor to verify skill discovery, command routing, client hooks, or how each client loads the contract in a linked worktree. The project-logic skill has Codex/Claude copy parity checks; Cursor uses the shared commands and Impeccable files.</p>
+          <p class="lv-label">Next evidence: keep version-stamped, small discovery smoke checks for supported clients; clearly mark unsupported or unverified combinations.</p>
+        </article>
+        <article class="lv-gap">
+          <h3>Automatic periodic review depends on GitHub Actions</h3>
+          <p>The weekly suggestion job is visible in an Actions run summary, but projects without GitHub Actions have no scheduler. They can run <code>./scripts/project suggest-upgrades</code> manually; scheduled execution is intentionally not installed locally.</p>
+          <p class="lv-label">Decision: keep local scheduling opt-in. A launch agent, cron job, or hosted notification would add setup and authority that the core does not currently need.</p>
+        </article>
+      </div>
+
+      <h3 style="margin-top: 52px">Research sources checked 2026-11-28</h3>
+      <ul class="lv-source-list">
+        <li><a href="https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra" target="_blank" rel="noreferrer">OpenAI · Rethinking skills and prompts</a> <span>Keep always-loaded instructions relevant; place detailed task procedures in skills.</span></li>
+        <li><a href="https://developers.openai.com/blog/skills-agents-sdk" target="_blank" rel="noreferrer">OpenAI · Using skills to accelerate OSS maintenance</a> <span>Repository policy plus progressive-disclosure skills can keep repeatable workflow context out of the initial prompt.</span></li>
+        <li><a href="https://developers.openai.com/blog/eval-skills" target="_blank" rel="noreferrer">OpenAI · Testing Agent Skills Systematically with Evals</a> <span>Small task-grounded evals can score activation, process, outcome, cleanliness, and efficiency.</span></li>
+        <li><a href="https://www.anthropic.com/news/donating-agent-skills-to-the-agentic-ai-foundation" target="_blank" rel="noreferrer">Anthropic · Agent Skills donated to AAIF</a> <span>Confirms an open, vendor-neutral skill standard and foundation stewardship.</span></li>
+        <li><a href="https://github.com/agentskills/agentskills" target="_blank" rel="noreferrer">Agent Skills specification</a> <span>Describes staged discovery, activation, and execution for portable skill folders.</span></li>
+        <li><a href="https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands" target="_blank" rel="noreferrer">GitHub Docs · Workflow commands and job summaries</a> <span>Documents <code>GITHUB_STEP_SUMMARY</code> for visible Markdown output in a workflow run.</span></li>
+      </ul>
+      <p class="lv-note"><strong>Limits:</strong> official guidance establishes current formats and recommendations, not successful runtime behavior for every installed client. This review did not run agent-provider sessions or use project production data. No model improvement is inferred from files existing.</p>
+    </section>
+
+    <footer class="lv-footer"><p>Repository sources: <a href="../AGENTS.md">AGENTS.md</a>, <a href="../README.md">README.md</a>, <a href="../docs/architecture.md">docs/architecture.md</a>, <a href="../docs/automation.md">docs/automation.md</a>, <a href="../docs/project-commands.md">docs/project-commands.md</a>, <a href="../docs/agent-capabilities.md">docs/agent-capabilities.md</a>, <a href="../docs/research/2026-11-28-agent-ecosystem-gaps.md">research brief</a>, and <code>scripts/</code>. This page summarizes evidence; the repository remains the source of truth.</p></footer>
+  </main>
+  <script src="../.lavish/theme.js"></script>
+</body>
+</html>

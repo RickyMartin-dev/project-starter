@@ -96,6 +96,14 @@ for file in "${workflow_files[@]}"; do
   done < <(grep -E 'uses:[[:space:]]*[^#]+' "$file" || true)
 done
 
+if [[ -f .github/workflows/upgrade-review.yml ]]; then
+  if ! grep -qF 'scripts/project suggest-upgrades' .github/workflows/upgrade-review.yml || \
+     ! grep -qF 'GITHUB_STEP_SUMMARY' .github/workflows/upgrade-review.yml; then
+    printf 'upgrade-review workflow must publish project suggestions in the Actions summary.\n' >&2
+    failures=$((failures + 1))
+  fi
+fi
+
 if (( failures > 0 )); then
   printf 'workflow check failed with %s issue(s).\n' "$failures" >&2
   exit 1

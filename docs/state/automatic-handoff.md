@@ -1,12 +1,12 @@
 # Automatic handoff
 
-- Updated: 2026-11-26 14:34 EST
-- Snapshot: `docs/compactions/2026-11-26-143452-automatic-session.md`
+- Updated: 2026-11-28 13:34 EST
+- Snapshot: `docs/compactions/2026-11-28-133409-automatic-session.md`
 - Mode: machine-generated, repository-local
 
 ## Latest outcome
 
-Merged project-local history and evidence-based learning with checkout v7.0.1 into main; both reviewers and hosted CI passed.
+Added report-scoped 12px inset to readiness table wrappers; cramped-padding finding cleared with no suppressions.
 
 ## Resume path
 

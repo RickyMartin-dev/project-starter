@@ -67,7 +67,7 @@
         </svg>
       </figure>
       <ol class="lv-steps">
-        <li><div><h3>Orient</h3><p><code>scripts/project start</code> detects common stack signals, refreshes ignored local context and checkpoint files, attempts to install Git hooks, then checks the starter.</p></div></li>
+        <li><div><h3>Orient</h3><p><code>scripts/project start</code> detects common stack signals, refreshes ignored local context and checkpoint files, preserves any configured hook path or active native hooks, and runs the quick file/syntax/whitespace check.</p></div></li>
         <li><div><h3>Work and verify</h3><p>Prompts guide plan, implement, verify, review, learn, research, promotion, compact, upgrade, and specialist workflows. The shared contract remains in <code>AGENTS.md</code>.</p></div></li>
         <li><div><h3>Finish and recover</h3><p><code>finish</code> runs the starter and release checks, writes a compaction snapshot and automatic handoff, then archives when <code>PROJECT_SNAPSHOT_ARCHIVE_ROOT</code> is set.</p></div></li>
       </ol>
@@ -86,7 +86,7 @@
             <tr><td>Durable project memory</td><td><code>docs/state/</code>, <code>docs/plans/</code>, <code>docs/compactions/</code>, decisions, experiments, lessons</td><td>Current task state and historical, reviewable facts in Git.</td></tr>
             <tr><td>Improvement loops</td><td><code>docs/research/</code>, <code>docs/upgrades/</code>, <code>agents/</code></td><td>External comparisons, bounded upgrade proposals, and reviewed specialist role cards.</td></tr>
             <tr><td>Machine contract</td><td><code>.agentic/manifest.json</code></td><td>Lists source of truth, commands, paths, workflows, adapters, and hardening checks.</td></tr>
-            <tr><td>Hosted checks</td><td><code>.github/workflows/</code>, <code>.github/dependabot.yml</code></td><td>Read only CI checks and weekly printing of deterministic upgrade suggestions.</td></tr>
+            <tr><td>Hosted checks</td><td><code>.github/workflows/</code>, <code>.github/dependabot.yml</code></td><td>Read only CI checks and a weekly Actions summary of evidence-backed upgrade suggestions.</td></tr>
           </tbody>
         </table>
       </div>
@@ -111,7 +111,7 @@
           <tbody>
             <tr><td>Upgrade signals counted directory guides as records.</td><td>Record detection excludes README, backlog, and index files. The presentation now describes missing-record and placeholder signals without claiming freshness or review-state detection.</td><td><code>scripts/project</code>, <code>scripts/check-automation.sh</code>, and <code>.lavish/project-starter-operating-system.html</code></td></tr>
             <tr><td>The starter's own brief, commands, architecture, and next task were generic.</td><td>They now describe Project Starter itself. Projects created from this starter are instructed to tailor those baseline docs to their product.</td><td><code>docs/project-brief.md</code>, <code>docs/project-commands.md</code>, <code>docs/architecture.md</code>, and <code>docs/state/next-task.md</code></td></tr>
-            <tr><td>Startup could replace a custom Git hooks path.</td><td>Startup installs <code>.githooks</code> only when no custom path is configured, reports custom-path status, and degrades clearly when setup fails.</td><td><code>scripts/project</code> and <code>scripts/check-automation.sh</code></td></tr>
+            <tr><td>Startup could replace hooks already in use.</td><td>Startup preserves configured hook paths and active native hooks, reports which condition applied, and only installs <code>.githooks</code> into an otherwise empty hook slot.</td><td><code>scripts/project</code> and <code>scripts/check-automation.sh</code></td></tr>
             <tr><td>Snapshot redaction missed formats recognized by the secret scanner.</td><td>The Bash and Python sanitizers cover AWS session keys, GitHub fine-grained tokens, Slack tokens, generic private keys, and encrypted private keys; fixtures check both paths.</td><td><code>scripts/project</code>, <code>scripts/archive_snapshot.py</code>, and <code>scripts/check-snapshot-archive.sh</code></td></tr>
             <tr><td>The manifest's <code>present</code> workflow had no provider route.</td><td>A canonical prompt plus Claude and Cursor command adapters now route to source-backed visual reports.</td><td><code>prompts/present.md</code>, <code>.claude/commands/present.md</code>, and <code>.cursor/commands/present.md</code></td></tr>
             <tr><td>Automation checks did not exercise the full CLI behavior.</td><td>Temporary-repository fixtures exercise missing-record signals, startup and redaction, hook-path preservation and failure, plan creation, and finish snapshot/handoff output.</td><td><code>scripts/check-automation.sh</code></td></tr>

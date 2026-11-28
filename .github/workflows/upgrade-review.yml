@@ -21,5 +21,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Print deterministic upgrade suggestions
-        run: ./scripts/project suggest-upgrades --json
+      - name: Publish evidence-backed suggestions
+        run: |
+          suggestions="$(./scripts/project suggest-upgrades)"
+          printf '%s\n' "$suggestions"
+          {
+            printf '## Project improvement suggestions\n\n'
+            printf '```text\n%s\n```\n' "$suggestions"
+          } >> "$GITHUB_STEP_SUMMARY"

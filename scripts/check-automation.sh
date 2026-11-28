@@ -25,14 +25,14 @@ if [[ ! -x scripts/snapshot-next-action.sh ]]; then
   failures=$((failures + 1))
 fi
 
-for command in 'start)' 'finish)' 'archive-snapshot)' '--task' '--summary' 'PROJECT_SNAPSHOT_ARCHIVE_ROOT' 'second-brain-checkpoint.md' 'core.hooksPath'; do
+for command in 'start)' 'finish)' 'archive-snapshot)' '--task' '--summary' '--quick' 'PROJECT_SNAPSHOT_ARCHIVE_ROOT' 'second-brain-checkpoint.md' 'core.hooksPath' 'existing-hooks-preserved' 'available-in-linked-worktree'; do
   if ! grep -qF -- "$command" scripts/project; then
     printf 'automation check missing project interface: %s\n' "$command" >&2
     failures=$((failures + 1))
   fi
 done
 
-for invariant in 'json_safe()' 'suggest_upgrades --json' "tr '\\r\\n\\t'"; do
+for invariant in 'json_safe()' 'suggest_upgrades --json' "tr '\\r\\n\\t'" 'session-context.md'; do
   if ! grep -qF -- "$invariant" scripts/project; then
     printf 'automation check missing safety invariant: %s\n' "$invariant" >&2
     failures=$((failures + 1))
@@ -125,6 +125,7 @@ cp -p scripts/project scripts/snapshot-next-action.sh scripts/learning-evidence.
 cp docs/templates/plan.md "$project_fixture/docs/templates/plan.md"
 cat > "$project_fixture/scripts/check-starter.sh" <<'EOF'
 #!/usr/bin/env bash
+printf '%s\n' "$*" > "$(dirname "$0")/last-check-args"
 exit 0
 EOF
 cat > "$project_fixture/scripts/check-release.sh" <<'EOF'
@@ -148,6 +149,15 @@ for directory in docs/compactions docs/state/proposals docs/research; do
 done
 printf '# Research backlog\n' > "$project_fixture/docs/research/backlog.md"
 git -C "$project_fixture" init -q
+git -C "$project_fixture" config user.email fixture@example.invalid
+git -C "$project_fixture" config user.name fixture
+cat > "$project_fixture/.githooks/pre-commit" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x "$project_fixture/.githooks/pre-commit"
+git -C "$project_fixture" add -A
+git -C "$project_fixture" commit -qm 'automation fixture'
 test_git_config="$fixture_dir/gitconfig"
 : > "$test_git_config"
 
@@ -155,15 +165,10 @@ suggestion_output="$(
   GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
     "$project_fixture/scripts/project" suggest-upgrades --json
 )"
-for expected in \
-  'create the first compaction snapshot' \
-  'record one project-local learning proposal' \
-  'run a fresh project research comparison'; do
-  if ! grep -qF "$expected" <<<"$suggestion_output"; then
-    printf 'upgrade suggestions missed an empty record directory: %s\n' "$expected" >&2
-    failures=$((failures + 1))
-  fi
-done
+if ! grep -qF '"status":"no-evidence","count":0,"suggestions":[]' <<<"$suggestion_output"; then
+  printf 'upgrade suggestions invented setup work when no evidence existed.\n' >&2
+  failures=$((failures + 1))
+fi
 
 template_doctor_output="$(
   GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
@@ -215,6 +220,10 @@ start_output="$(
 )"
 if ! grep -qF '"hooks":"installed"' <<<"$start_output"; then
   printf 'CLI start did not install the project hooks in a clean fixture.\n' >&2
+  failures=$((failures + 1))
+fi
+if [[ "$(cat "$project_fixture/scripts/last-check-args")" != '--quick' ]]; then
+  printf 'CLI start did not use the fast starter check.\n' >&2
   failures=$((failures + 1))
 fi
 if [[ "$(git -C "$project_fixture" config --local --get core.hooksPath)" != '.githooks' ]]; then
@@ -352,6 +361,45 @@ if ! grep -qF '"hooks":"custom-hooks-configured"' <<<"$custom_hooks_output" || \
 fi
 
 git -C "$project_fixture" config --local --unset core.hooksPath
+mkdir -p "$project_fixture/.git/hooks"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$project_fixture/.git/hooks/pre-commit"
+chmod +x "$project_fixture/.git/hooks/pre-commit"
+native_hooks_output="$(
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
+    "$project_fixture/scripts/project" start --task 'preserve native hooks' --json
+)"
+if ! grep -qF '"hooks":"existing-hooks-preserved"' <<<"$native_hooks_output" || \
+   git -C "$project_fixture" config --local --get core.hooksPath >/dev/null 2>&1; then
+  printf 'CLI start overrode an active native Git hook.\n' >&2
+  failures=$((failures + 1))
+fi
+rm -f "$project_fixture/.git/hooks/pre-commit"
+cat > "$project_fixture/.git/hooks/pre-commit" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x "$project_fixture/.git/hooks/pre-commit"
+native_hook_worktree="$fixture_dir/native-hook-linked-worktree"
+git -C "$project_fixture" worktree add --detach "$native_hook_worktree" HEAD >/dev/null
+linked_native_hooks_output="$(
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
+    "$native_hook_worktree/scripts/project" start --task 'preserve linked-worktree hooks' --json
+)"
+if ! grep -qF '"hooks":"existing-hooks-preserved"' <<<"$linked_native_hooks_output" || \
+   git -C "$native_hook_worktree" config --local --get core.hooksPath >/dev/null 2>&1; then
+  printf 'CLI start failed to preserve native Git hooks from a linked worktree.\n' >&2
+  failures=$((failures + 1))
+fi
+rm -f "$project_fixture/.git/hooks/pre-commit"
+linked_no_hooks_output="$(
+  GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL="$test_git_config" \
+    "$native_hook_worktree/scripts/project" start --task 'avoid shared linked-worktree hook config' --json
+)"
+if ! grep -qF '"hooks":"available-in-linked-worktree"' <<<"$linked_no_hooks_output" || \
+   git -C "$project_fixture" config --local --get core.hooksPath >/dev/null 2>&1; then
+  printf 'CLI start changed shared Git hook configuration from a linked worktree.\n' >&2
+  failures=$((failures + 1))
+fi
 real_git="$(command -v git)"
 fake_bin="$fixture_dir/fake-bin"
 mkdir -p "$fake_bin"

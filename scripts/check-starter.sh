@@ -4,6 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+quick=false
+if [[ "${1:-}" == "--quick" ]]; then
+  quick=true
+elif [[ $# -gt 0 ]]; then
+  printf 'usage: scripts/check-starter.sh [--quick]\n' >&2
+  exit 2
+fi
+
 required_files=(
   "README.md"
   "SECURITY.md"
@@ -13,6 +21,8 @@ required_files=(
   "docs/CONTRIBUTING.md"
   "docs/project-brief.md"
   "docs/project-commands.md"
+  "docs/adopting-existing-repo.md"
+  "docs/agent-capabilities.md"
   "docs/architecture.md"
   "docs/agent-workflow.md"
   "docs/quality.md"
@@ -46,6 +56,7 @@ required_files=(
   "agents/specialists/.gitkeep"
   ".lavish/project-starter-operating-system.html"
   ".lavish/repo-walkthrough.html"
+  "resources/agent-readiness-report.html"
   "docs/verification-log.md"
   "docs/plans/completed/hardening-review.md"
   "docs/experiments/README.md"
@@ -170,7 +181,7 @@ for path in CHANGELOG.md CONTRIBUTING.md; do
   fi
 done
 
-for link in 'docs/CHANGELOG.md' 'docs/CONTRIBUTING.md'; do
+for link in 'docs/CHANGELOG.md' 'docs/CONTRIBUTING.md' 'docs/adopting-existing-repo.md' 'docs/agent-capabilities.md' 'resources/agent-readiness-report.html'; do
   if ! grep -qF "]($link)" README.md; then
     printf 'README.md must link to %s.\n' "$link" >&2
     failures=$((failures + 1))
@@ -195,11 +206,13 @@ fi
 
 # Credential scanning lives in scripts/check-secrets.sh, which honors the reviewed .agentic/secret-scan-ignore allowlist.
 
-for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-design.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
-  if ! bash "$ROOT_DIR/scripts/$security_check"; then
-    failures=$((failures + 1))
-  fi
-done
+if [[ "$quick" != true ]]; then
+  for security_check in check-secrets.sh check-workflows.sh check-instruction-surfaces.sh check-manifest.sh check-hardening-fixtures.sh check-learning.sh check-memory.sh check-research.sh check-upgrades.sh check-specialists.sh check-presentation.sh check-design.sh check-automation.sh check-snapshot-archive.sh check-project-logic-skill.sh; do
+    if ! bash "$ROOT_DIR/scripts/$security_check"; then
+      failures=$((failures + 1))
+    fi
+  done
+fi
 
 while IFS= read -r script; do
   if [[ -f "$script" ]] && ! bash -n "$script"; then
@@ -225,4 +238,8 @@ if (( failures > 0 )); then
   exit 1
 fi
 
-printf 'starter check passed: %s required files, AGENTS.md=%s lines.\n' "${#required_files[@]}" "$agents_lines"
+if [[ "$quick" == true ]]; then
+  printf 'starter quick check passed: %s required files, shell syntax, and whitespace; AGENTS.md=%s lines.\n' "${#required_files[@]}" "$agents_lines"
+else
+  printf 'starter check passed: %s required files, AGENTS.md=%s lines.\n' "${#required_files[@]}" "$agents_lines"
+fi

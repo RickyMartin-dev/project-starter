@@ -24,8 +24,9 @@ build/
 coverage/
 *.log
 
-# Local resources belong to the working copy, not version control.
-/resources/
+# Local resources stay out of version control except for this reviewed readiness report.
+/resources/*
+!/resources/agent-readiness-report.html
 
 # Impeccable engine binaries download per platform on first run; local design state stays local.
 .agents/skills/impeccable/scripts/bin/

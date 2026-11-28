@@ -61,7 +61,7 @@
       <h2 class="lv-h2" id="task-title">A task, start to finish</h2>
       <p class="lv-intro">Every agent follows the same five steps. The commands do the bookkeeping so nothing important lives only in chat.</p>
       <ol class="lv-steps">
-        <li><div><h3>Start</h3><p><code>./scripts/project start</code> loads context, installs Git hooks, and checks the repository is healthy.</p></div></li>
+        <li><div><h3>Start</h3><p><code>./scripts/project start</code> refreshes local context, runs the fast file/syntax/whitespace check, and installs starter hooks only when no custom path or active native hook exists.</p></div></li>
         <li><div><h3>Plan</h3><p><code>./scripts/project plan</code> creates a short plan in <code>docs/plans/active/</code> for anything bigger than a quick fix.</p></div></li>
         <li><div><h3>Build</h3><p>The agent makes small changes, guided by <code>AGENTS.md</code> and the prompts in <code>prompts/</code>.</p></div></li>
         <li><div><h3>Check</h3><p><code>./scripts/project check</code> runs every guardrail: files, secrets, workflows, memory, design.</p></div></li>
@@ -80,7 +80,7 @@
             <tr><td>Every commit</td><td><code>project check</code></td><td>Block missing files, leaked secrets, and broken contracts.</td></tr>
             <tr><td>Every push</td><td><code>project release-check</code></td><td>Run the full gate, including whitespace in new files.</td></tr>
             <tr><td>Pull requests and main</td><td>GitHub Actions: quality, security</td><td>Repeat the same checks on a clean machine.</td></tr>
-            <tr><td>Weekly</td><td>GitHub Actions: upgrade review</td><td>Print upgrade suggestions for a person to review.</td></tr>
+            <tr><td>Weekly</td><td>GitHub Actions: upgrade review</td><td>Show evidence-backed suggestions in the run summary for a person to review.</td></tr>
           </tbody>
         </table>
       </div>
@@ -92,7 +92,7 @@
       <div class="lv-cols">
         <div><h3>Compaction</h3><p>Snapshots of branch, commit, decisions, risks, and the next action, saved in <code>docs/compactions/</code> before context runs out.</p></div>
         <div><h3>Research</h3><p>Dated comparisons with sources in <code>docs/research/</code>. Outside ideas are input, never rules.</p></div>
-        <div><h3>Upgrades</h3><p><code>suggest-upgrades</code> flags placeholders, missing project records, and missing specialist briefs. A person decides.</p></div>
+        <div><h3>Upgrades</h3><p><code>suggest-upgrades</code> flags recorded friction, recent failures, unchecked lessons, waiting proposals, and stale research. With no evidence it stays quiet. A person decides.</p></div>
       </div>
       <div class="lv-cols">
         <div><h3>Specialists</h3><p>Role cards in <code>agents/</code> that spell out a helper's job and limits. They are reviewed before any agent uses them.</p></div>
@@ -103,7 +103,7 @@
 
     <section class="lv-section" id="design" aria-labelledby="design-title">
       <h2 class="lv-h2" id="design-title">How design work is handled</h2>
-      <p class="lv-intro">The Impeccable skill is installed for all three agents. It reads two files and checks UI edits as they happen.</p>
+      <p class="lv-intro">The Impeccable skill is included for all three agents. It reads two files and offers optional design checks; its detector downloads a platform binary on first use.</p>
       <div class="lv-cols">
         <div><h3>PRODUCT.md</h3><p>Who the project is for and what it must feel like.</p></div>
         <div><h3>DESIGN.md</h3><p>Colors, type, spacing, and components. Values live in <code>.lavish/theme.css</code>.</p></div>

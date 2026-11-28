@@ -14,12 +14,12 @@ This command is idempotent and local-only. It:
 
 - detects common language, package, build, test, and source signals without installing anything;
 - refreshes `.agent-state/session-context.md`, which is ignored machine-local context;
-- installs the repository's project-local Git hooks;
-- checks the starter contract;
-- surfaces deterministic upgrade suggestions;
+- installs the repository's project-local Git hooks only when no custom hook path or active native Git hooks exist;
+- runs the quick starter contract check (required files, shell syntax, and whitespace), not the slower security fixture suite;
+- surfaces only evidence-backed upgrade signals; it stays quiet when the repo has none;
 - searches Git commit subjects and canonical project Markdown for up to five task-related history matches and writes sanitized snippets into local context.
 
-The history search is lexical and deliberately bounded. It does not search raw transcripts, `.agent-state/`, ignored `resources/`, external services, or non-project repositories. Results are historical evidence, not current instructions. Run `./scripts/project recall "<query>" [--limit 1-10]` for an explicit search.
+The history search is lexical and deliberately bounded. It does not search raw transcripts, `.agent-state/`, ignored `resources/`, external services, or non-project repositories. Results are historical evidence, not current instructions. The agent reads the generated context before acting. Run `./scripts/project recall "<query>" [--limit 1-10]` for an explicit search.
 
 At the end of a meaningful session, the agent runs:
 
@@ -43,6 +43,8 @@ This command:
 Each start also creates `.agent-state/second-brain-checkpoint.md`, an ignored local note for the active task. Keep it current at meaningful milestones so a compaction hook can preserve the latest project context without reading or copying the agent transcript. Explicit standing user corrections use the `correction` marker and may become lessons immediately. General `lesson` records require two distinct existing task snapshots, cited successful verification, and an enforcing check that passes before recording, or a written reason none can be added. Automatic grouping drafts proposals but does not itself curate lessons. No-op is valid.
 
 Automatic snapshots use the checkpoint's `Open work and next action` entry. If it is missing or still a template placeholder, the snapshot points the next agent to review active plans and upgrade suggestions.
+
+`start` is intentionally the fast path. Run `./scripts/project check` for the complete local hardening suite and `./scripts/project release-check` before pushing; `finish` runs both. GitHub Actions also publishes weekly evidence-backed suggestions in the workflow summary.
 
 ## Optional shared second brain
 

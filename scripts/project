@@ -283,30 +283,10 @@ suggest_upgrades() {
   while IFS= read -r line; do
     [[ -n "$line" ]] && suggestions+=("$line")
   done < <(suggestion_lines)
-  local signal_count=${#suggestions[@]}
-  if grep -q 'replace-me' "$ROOT_DIR/docs/project-brief.md" 2>/dev/null; then
-    suggestions+=("customize the project brief before implementation")
-  fi
-  if grep -q 'replace-me' "$ROOT_DIR/docs/project-commands.md" 2>/dev/null; then
-    suggestions+=("replace project command placeholders with reproducible checks")
-  fi
-  if ! has_markdown_record "$ROOT_DIR/docs/compactions"; then
-    suggestions+=("create the first compaction snapshot before the next long session")
-  fi
-  if ! has_markdown_record "$ROOT_DIR/docs/state/proposals"; then
-    suggestions+=("record one project-local learning proposal after the next verified task")
-  fi
-  if ! has_markdown_record "$ROOT_DIR/docs/research"; then
-    suggestions+=("run a fresh project research comparison")
-  fi
-  if ! find "$ROOT_DIR/agents/specialists" -maxdepth 1 -type f -name '*.md' -print 2>/dev/null | grep -q .; then
-    suggestions+=("create and review the first project-specific specialist brief")
-  fi
-  if (( ${#suggestions[@]} == 0 )); then
-    suggestions+=("review recent verification evidence and select the smallest measurable upgrade")
-  fi
   if [[ "$json" == true ]]; then
-    printf '{"status":"suggestions","count":%s,"suggestions":[' "${#suggestions[@]}"
+    local status="suggestions"
+    (( ${#suggestions[@]} > 0 )) || status="no-evidence"
+    printf '{"status":"%s","count":%s,"suggestions":[' "$status" "${#suggestions[@]}"
     local i
     for i in "${!suggestions[@]}"; do
       (( i > 0 )) && printf ','
@@ -319,17 +299,14 @@ suggest_upgrades() {
     done
     printf ']}\n'
   else
-    printf 'Upgrade suggestions (%s):\n' "${#suggestions[@]}"
+    if (( ${#suggestions[@]} == 0 )); then
+      printf 'No evidence-backed upgrade suggestions.\n'
+      return 0
+    fi
+    printf 'Evidence-backed upgrade suggestions (%s):\n' "${#suggestions[@]}"
     printf -- '- %s\n' "${suggestions[@]}"
-    printf 'Review each suggestion against evidence before creating a proposal.\n'
+    printf 'Review each suggestion against current evidence before creating a proposal.\n'
   fi
-}
-
-has_markdown_record() {
-  local directory="$1"
-  find "$directory" -maxdepth 1 -type f -name '*.md' \
-    ! -name 'README.md' ! -name 'backlog.md' ! -name 'index.md' \
-    -print -quit 2>/dev/null | grep -q .
 }
 
 doctor_json() {
@@ -978,17 +955,38 @@ refresh_local_context() {
 
 install_hooks() {
   if [[ -d "$ROOT_DIR/.githooks" ]] && git -C "$ROOT_DIR" rev-parse --show-toplevel >/dev/null 2>&1; then
-    local configured_hooks_path
+    local configured_hooks_path git_dir common_git_dir native_hooks_dir hook canonical_git_dir canonical_common_git_dir
     if configured_hooks_path="$(git -C "$ROOT_DIR" config --get core.hooksPath 2>/dev/null)"; then
       if [[ "$configured_hooks_path" == '.githooks' ]]; then
         hooks_status="installed"
       else
         hooks_status="custom-hooks-configured"
       fi
-    elif git -C "$ROOT_DIR" config core.hooksPath .githooks 2>/dev/null; then
-      hooks_status="installed"
     else
-      hooks_status="available-but-not-installed"
+      git_dir="$(git -C "$ROOT_DIR" rev-parse --absolute-git-dir 2>/dev/null || true)"
+      common_git_dir="$(git -C "$ROOT_DIR" rev-parse --git-common-dir 2>/dev/null || true)"
+      native_hooks_dir="$(git -C "$ROOT_DIR" rev-parse --git-path hooks 2>/dev/null || true)"
+      [[ "$native_hooks_dir" == /* ]] || native_hooks_dir="$ROOT_DIR/$native_hooks_dir"
+      for hook in "$native_hooks_dir"/*; do
+        [[ -f "$hook" && -x "$hook" ]] || continue
+        [[ "$(basename "$hook")" == *.sample ]] && continue
+        hooks_status="existing-hooks-preserved"
+        return 0
+      done
+      if [[ -n "$git_dir" && -n "$common_git_dir" ]]; then
+        [[ "$common_git_dir" == /* ]] || common_git_dir="$ROOT_DIR/$common_git_dir"
+        canonical_git_dir="$(cd "$git_dir" && pwd -P)"
+        canonical_common_git_dir="$(cd "$common_git_dir" && pwd -P)"
+        if [[ "$canonical_git_dir" != "$canonical_common_git_dir" ]]; then
+          hooks_status="available-in-linked-worktree"
+          return 0
+        fi
+      fi
+      if git -C "$ROOT_DIR" config core.hooksPath .githooks 2>/dev/null; then
+        hooks_status="installed"
+      else
+        hooks_status="available-but-not-installed"
+      fi
     fi
     return 0
   fi
@@ -1157,8 +1155,8 @@ start_session() {
   install_hooks
   refresh_local_context "$task"
   refresh_snapshot_checkpoint "$task"
-  if ! "$ROOT_DIR/scripts/check-starter.sh" >/dev/null; then
-    printf 'automatic start failed: starter contract is unhealthy.\n' >&2
+  if ! "$ROOT_DIR/scripts/check-starter.sh" --quick >/dev/null; then
+    printf 'automatic start failed: core starter files, shell syntax, or whitespace are unhealthy; run ./scripts/project check for the full report.\n' >&2
     exit 1
   fi
   if [[ "$json" == true ]]; then
@@ -1596,6 +1594,9 @@ case "${1:-}" in
         printf '{"status":"fail","command":"./scripts/project check"}\n'
         exit 1
       fi
+    fi
+    if [[ "${2:-}" == "--quick" ]]; then
+      exec "$ROOT_DIR/scripts/check-starter.sh" --quick
     fi
     exec "$ROOT_DIR/scripts/check-starter.sh"
     ;;

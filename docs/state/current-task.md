@@ -2,26 +2,26 @@
 
 ## Status
 
-Complete: consolidated project history and learning changes and Dependabot PR #1 are merged into main.
+Complete: full repository readiness review and targeted fixes for Project Starter's low-token, low-setup, repository-local agent continuity goal.
 
 - Owner: Codex
-- Plan: docs/plans/completed/consolidated-project-pr-2026-11-24.md
-- Acceptance: consolidated PR reviewed by both independent reviewers, local checks passed, hosted CI green, PR #2 merged to main, and PR #1 closed as superseded.
+- Plan: `docs/plans/completed/agent-readiness.md`
+- Deliverable: [`resources/agent-readiness-report.html`](../../resources/agent-readiness-report.html)
 
-## Outcome
+## Completed
 
-- PR #2 merged at 0b269bfdea4485ec411d394d57ab81ca07446489. The final reviewed head was 77e7c822c774cb275fc5f73a74d6f8006e23d67c.
-- PR #1, the actions/checkout v7.0.1 update, is closed as superseded; the pin is included in the merged workflows.
-- Astra and Luna xhigh both marked the exact final PR head merge-ready.
-- Starter security and Starter quality workflows passed on that exact head.
-- Direct project check, release-check, and doctor --json passed on a clean snapshot of submitted feature commit 01f91dc; doctor reported no placeholder warnings.
-- The no-mistakes Test agent hit its 30-minute invocation limit before completing live scenarios. The timeout gate was approved after direct checks; the pipeline finished with passed-with-override.
-- Local main was fast-forwarded to the verified merge commit. Final task-closeout notes and sanitized learning records are included in a documentation-only follow-up.
+- Traced the shared contract, CLI, memory and learning loop, provider skills/adapters, hooks, workflows, and repository checks; obtained an independent no-history Luna high-reasoning review.
+- Researched current official agent guidance and recorded the findings under `docs/research/`.
+- Made generated session context explicit, kept `start` fast, preserved configured/native hooks including linked-worktree hooks, removed generic unsupported upgrade reminders, and surfaced scheduled suggestions in GitHub Actions summaries.
+- Clarified existing-repo adoption risks and the actual built-in versus external skills and tools.
+- Ran full starter and release gates successfully; reviewed the HTML in Chrome and confirmed section navigation plus light/dark rendering.
+- `./scripts/project finish` passed its release gate, generated the handoff, and confirmed the sanitized task snapshot was saved to the shared vault.
+- Follow-up design-hook finding: added a 12px inset to the readiness report's bordered table wrappers; the cramped-padding finding cleared without suppressions, and `./scripts/project check` passed.
 
-## Follow-up
+## Remaining limits
 
-The test-agent timeout is recorded as friction for future review. Consider configuring a deterministic repository test command so routine validation does not spend a long agent budget on broad live scenarios.
+No safe overlay installer, empirical agent-quality/token benchmark, provider runtime compatibility matrix, or local scheduler was added. The report lists these remaining gaps and next evidence. Narrow viewport rendering was not visually checked because the available Chrome window could not be resized; Lavish's annotation server could not bind a local port in the sandbox.
 
-## Update protocol
+## Next
 
-At the start of a substantial task, record the goal, owner, plan link, and acceptance criteria here. Before handoff, record what changed, what was verified, and the next decision. Keep this file short and move completed context to archive when it is no longer active.
+No open implementation work from this task. The report's radius and type-ramp notes remain visible advisories; neither was suppressed or changed as part of the padding fix. Use the readiness report's gaps section to choose follow-up work.
